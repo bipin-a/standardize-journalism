@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:docs.ckan.org)",
+      "Bash(curl:*)",
+      "Bash(cat:*)",
+      "Bash(source .venv/bin/activate)",
+      "Bash(python3:*)",
+      "Bash(lsof:*)",
+      "WebFetch(domain:ckan0.cf.opendata.inter.prod-toronto.ca)"
+    ]
+  }
+}

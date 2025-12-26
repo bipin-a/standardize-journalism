@@ -1,0 +1,13 @@
+data/
+*.sqlite
+*.sqlite3
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+.next/
+out/
+.env*
+!.env.example
+.DS_Store
+*.log
