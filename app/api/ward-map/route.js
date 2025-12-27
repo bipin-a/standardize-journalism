@@ -3,7 +3,7 @@ import { loadJsonData } from '../_lib/load-json'
 export const revalidate = 3600
 
 const LOCAL_DATA_PATH = 'data/processed/capital_by_ward.json'
-const WARD_GEOJSON_CACHE_KEY = 'ward_boundaries_geojson'
+const LOCAL_GEOJSON_PATH = 'data/processed/ward_boundaries.geojson'
 let wardGeoJSONCache = null
 
 const loadCapitalData = async () => {
@@ -19,17 +19,11 @@ const fetchWardGeoJSON = async () => {
     return wardGeoJSONCache
   }
 
-  // Fetch 25-ward GeoJSON from Toronto Open Data CKAN API
-  // Use the cached GeoJSON resource (WGS84 lat/lng - EPSG:4326)
-  const geojsonResourceId = '737b29e0-8329-4260-b6af-21555ab24f28'
-  const downloadUrl = `https://ckan0.cf.opendata.inter.prod-toronto.ca/dataset/5e7a8234-f805-43ac-820f-03d7c360b588/resource/${geojsonResourceId}/download/city-wards-data.geojson`
-
-  const response = await fetch(downloadUrl)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ward GeoJSON: ${response.statusText}`)
-  }
-
-  const geoJSON = await response.json()
+  const geoJSON = await loadJsonData({
+    envKey: 'WARD_GEOJSON_URL',
+    localPath: LOCAL_GEOJSON_PATH,
+    revalidateSeconds: revalidate
+  })
   wardGeoJSONCache = geoJSON
   return geoJSON
 }
@@ -62,10 +56,17 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url)
     const requestedYear = Number.parseInt(searchParams.get('year'), 10)
-    const year = Number.isFinite(requestedYear) ? requestedYear : 2024
 
     // Load capital data
     const allRecords = await loadCapitalData()
+    const availableYears = [...new Set(allRecords.map(r => r.fiscal_year))].sort((a, b) => a - b)
+    if (availableYears.length === 0) {
+      return Response.json({ error: 'No capital budget data available' }, { status: 404 })
+    }
+    const year = Number.isFinite(requestedYear) && availableYears.includes(requestedYear)
+      ? requestedYear
+      : availableYears[availableYears.length - 1]
+
     const yearRecords = allRecords.filter(r => r.fiscal_year === year && r.ward_number !== 0)
 
     // Aggregate by ward

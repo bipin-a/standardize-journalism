@@ -49,21 +49,39 @@ const getHealthColor = (value, threshold, reverse = false) => {
   return isWarning ? '#dc2626' : '#16a34a'
 }
 
+const getCategoryLabel = (category) => {
+  const labels = {
+    transportation: 'Transit & Transportation',
+    housing_development: 'Housing & Development',
+    environment: 'Environment & Climate',
+    budget_finance: 'Budget & Taxes',
+    public_safety: 'Police & Safety',
+    social_services: 'Community Services',
+    governance: 'Council Operations',
+    other: 'Other'
+  }
+  return labels[category] || category
+}
+
 export default function Home() {
   const [metric, setMetric] = useState(null)
   const [capitalData, setCapitalData] = useState(null)
   const [wardMapData, setWardMapData] = useState(null)
   const [moneyFlow, setMoneyFlow] = useState(null)
+  const [councilData, setCouncilData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [capitalLoading, setCapitalLoading] = useState(true)
   const [wardMapLoading, setWardMapLoading] = useState(true)
   const [moneyFlowLoading, setMoneyFlowLoading] = useState(true)
+  const [councilLoading, setCouncilLoading] = useState(true)
   const [error, setError] = useState(null)
   const [capitalError, setCapitalError] = useState(null)
   const [wardMapError, setWardMapError] = useState(null)
   const [moneyFlowError, setMoneyFlowError] = useState(null)
+  const [councilError, setCouncilError] = useState(null)
   const [year, setYear] = useState(DEFAULT_YEAR)
   const [showCapitalDetails, setShowCapitalDetails] = useState(false)
+  const [showVotingDetails, setShowVotingDetails] = useState(false)
 
   const currentYear = new Date().getFullYear()
   const yearOptions = Array.from(
@@ -147,6 +165,26 @@ export default function Home() {
       .catch(err => {
         setMoneyFlowError(err.message)
         setMoneyFlowLoading(false)
+      })
+  }, [year])
+
+  useEffect(() => {
+    setCouncilLoading(true)
+    setCouncilError(null)
+    setCouncilData(null)
+    fetch(`/api/council-decisions?year=${year}&recent=365`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          setCouncilError(data.error)
+        } else {
+          setCouncilData(data)
+        }
+        setCouncilLoading(false)
+      })
+      .catch(err => {
+        setCouncilError(err.message)
+        setCouncilLoading(false)
       })
   }, [year])
 
@@ -1011,7 +1049,161 @@ export default function Home() {
           </div>
         )}
 
-        {/* Section 5: What You Should Know */}
+        {/* Section 5: Council Decisions */}
+        {!councilLoading && !councilError && councilData && (
+          <div style={{ padding: '32px 20px', borderBottom: '1px solid #e5e7eb' }}>
+            <div
+              style={{
+                fontSize: '13px',
+                fontWeight: 600,
+                color: '#6b7280',
+                marginBottom: '16px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}
+            >
+              Section 5: Council Decisions
+            </div>
+
+            {/* Last Updated Timestamp */}
+            {councilData.timestamp && (
+              <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '16px' }}>
+                Last updated: {new Date(councilData.timestamp).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}
+              </div>
+            )}
+
+            {/* Big Number */}
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '48px', fontWeight: 700, color: '#111827', lineHeight: '1' }}>
+                {councilData.metadata.total_motions}
+              </div>
+              <div style={{ fontSize: '15px', color: '#6b7280', marginTop: '8px' }}>
+                motions voted on in the past year ({councilData.metadata.pass_rate}% passed)
+              </div>
+            </div>
+
+            {/* Recent Decisions List */}
+            <div style={{ marginBottom: '32px' }}>
+              <div style={{ fontSize: '15px', fontWeight: 600, color: '#111827', marginBottom: '16px' }}>
+                Recent Decisions
+              </div>
+              {councilData.recent_decisions.slice(0, 10).map((decision, idx) => (
+                <div key={decision.motion_id || idx} style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ flex: 1, minWidth: '200px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>
+                        {decision.motion_title}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
+                        {decision.meeting_date} • {getCategoryLabel(decision.motion_category)}
+                      </div>
+                    </div>
+                    <div style={{
+                      padding: '4px 12px',
+                      borderRadius: '12px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      backgroundColor: decision.vote_outcome === 'passed' ? '#d1fae5' : '#fee2e2',
+                      color: decision.vote_outcome === 'passed' ? '#065f46' : '#991b1b',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {decision.vote_outcome === 'passed' ? 'Passed' : 'Failed'}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
+                    {decision.yes_votes} Yes • {decision.no_votes} No • {decision.absent_votes} Absent
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Decision Categories */}
+            <div style={{ marginBottom: '32px' }}>
+              <div style={{ fontSize: '15px', fontWeight: 600, color: '#111827', marginBottom: '16px' }}>
+                Decisions by Category
+              </div>
+              {councilData.decision_categories.slice(0, 7).map((cat, idx) => {
+                const maxPassRate = Math.max(...councilData.decision_categories.map(c => c.pass_rate))
+                const widthPercent = (cat.pass_rate / (maxPassRate || 100)) * 100
+
+                return (
+                  <div key={cat.category} style={{ marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '13px' }}>
+                      <span style={{ fontWeight: 500, color: '#111827' }}>
+                        {cat.label} <span style={{ color: '#9ca3af', fontSize: '11px', fontWeight: 400 }}>(auto-categorized)</span>
+                      </span>
+                      <span style={{ fontWeight: 600, color: '#3b82f6' }}>
+                        {cat.pass_rate.toFixed(1)}% passed
+                      </span>
+                    </div>
+                    <div style={{ height: '8px', backgroundColor: '#e5e7eb', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{
+                        width: `${widthPercent}%`,
+                        height: '100%',
+                        backgroundColor: cat.pass_rate > 80 ? '#10b981' : cat.pass_rate > 50 ? '#3b82f6' : '#f59e0b',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
+                      {cat.passed} passed, {cat.failed} failed ({cat.total_motions} total)
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Lobbyist Activity Card */}
+            {councilData.lobbying_summary && (
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '15px', fontWeight: 600, color: '#111827', marginBottom: '16px' }}>
+                  Lobbyist Activity
+                </div>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '16px'
+                  }}
+                >
+                  <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}>
+                    <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#6b7280', marginBottom: '6px', fontWeight: 600 }}>
+                      Active Registrations
+                    </div>
+                    <div style={{ fontSize: '24px', fontWeight: 700, color: '#111827' }}>
+                      {councilData.lobbying_summary.active_registrations.toLocaleString()}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                      lobbying the city
+                    </div>
+                  </div>
+                  <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}>
+                    <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#6b7280', marginBottom: '6px', fontWeight: 600 }}>
+                      Communications
+                    </div>
+                    <div style={{ fontSize: '24px', fontWeight: 700, color: '#111827' }}>
+                      {councilData.lobbying_summary.recent_communications.toLocaleString()}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                      recent contacts
+                    </div>
+                  </div>
+                </div>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '12px' }}>
+                  <strong>Top topics:</strong> {councilData.lobbying_summary.top_subjects.slice(0, 3).map(getCategoryLabel).join(', ')}
+                </div>
+              </div>
+            )}
+
+            {/* Explainer */}
+            <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#f3f4f6', border: '1px solid #e5e7eb', marginTop: '24px' }}>
+              <div style={{ fontSize: '13px', color: '#374151', lineHeight: '1.6' }}>
+                This section shows recent decisions made by Toronto City Council. Each motion is voted on by councillors (Yes, No, or Absent). A motion passes when it receives a majority of Yes votes. Lobbyist activity shows who is attempting to influence decisions—it does not indicate that lobbying caused specific outcomes, only that influence attempts occurred.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Section 6: What You Should Know */}
         <div style={{ padding: '32px 20px', borderBottom: '1px solid #e5e7eb' }}>
           <div
             style={{
@@ -1023,7 +1215,7 @@ export default function Home() {
               letterSpacing: '0.5px'
             }}
           >
-            Section 5: What You Should Know
+            Section 6: What You Should Know
           </div>
 
           <div style={{ fontSize: '15px', fontWeight: 600, color: '#111827', marginBottom: '12px' }}>
@@ -1103,7 +1295,7 @@ export default function Home() {
                 (10-year plan)
               </span>
             </div>
-            <div>
+            <div style={{ marginBottom: '8px' }}>
               →{' '}
               <a
                 href="https://open.toronto.ca/dataset/revenues-and-expenses/"
@@ -1115,6 +1307,34 @@ export default function Home() {
               </a>
               <span style={{ color: '#94a3b8', fontSize: '12px', marginLeft: '8px' }}>
                 (annual summary)
+              </span>
+            </div>
+            <div style={{ marginBottom: '8px' }}>
+              →{' '}
+              <a
+                href="https://open.toronto.ca/dataset/city-council-voting-record/"
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: '#3b82f6', textDecoration: 'underline' }}
+              >
+                Council Voting Record
+              </a>
+              <span style={{ color: '#94a3b8', fontSize: '12px', marginLeft: '8px' }}>
+                (updated after meeting minutes published, typically weekly or less frequent)
+              </span>
+            </div>
+            <div>
+              →{' '}
+              <a
+                href="https://open.toronto.ca/dataset/lobbyist-registry/"
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: '#3b82f6', textDecoration: 'underline' }}
+              >
+                Lobbyist Registry
+              </a>
+              <span style={{ color: '#94a3b8', fontSize: '12px', marginLeft: '8px' }}>
+                (updated daily)
               </span>
             </div>
           </div>

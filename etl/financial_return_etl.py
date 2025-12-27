@@ -2,19 +2,20 @@
 import argparse
 import json
 import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
 import requests
 
-CKAN_BASE_URL = "https://ckan0.cf.opendata.inter.prod-toronto.ca/api/3/action"
-DEFAULT_PACKAGE_ID = "734d5877-f4de-4322-9851-882d22e1a11f"
-DEFAULT_OUTPUT = "data/processed/financial_return.json"
+# Add parent directory to path to import config_loader
+sys.path.insert(0, str(Path(__file__).parent))
+from config_loader import get_dataset_config, load_config
 
-def ckan_call(endpoint):
-    url = f"{CKAN_BASE_URL}/{endpoint}"
-    response = requests.get(url, timeout=30)
+def ckan_call(endpoint, base_url, timeout):
+    url = f"{base_url}/api/3/action/{endpoint}"
+    response = requests.get(url, timeout=timeout)
     response.raise_for_status()
     payload = response.json()
     if not payload.get("success"):
@@ -52,7 +53,7 @@ def select_resources(resources):
     return candidates
 
 
-def download_resource(resource, output_dir):
+def download_resource(resource, output_dir, timeout):
     url = resource.get("url")
     if not url:
         raise RuntimeError("Selected resource has no download URL.")
@@ -60,7 +61,7 @@ def download_resource(resource, output_dir):
     filename = Path(url.split("?")[0]).name
     destination = output_dir / filename
 
-    with requests.get(url, stream=True, timeout=60) as response:
+    with requests.get(url, stream=True, timeout=timeout) as response:
         response.raise_for_status()
         with open(destination, "wb") as handle:
             for chunk in response.iter_content(chunk_size=1024 * 1024):
@@ -257,7 +258,7 @@ def aggregate_records(records):
 
 
 def run_etl(args):
-    package = ckan_call(f"package_show?id={args.package_id}")
+    package = ckan_call(f"package_show?id={args.package_id}", args.ckan_base_url, args.ckan_timeout)
     resources = package.get("resources", [])
 
     output_dir = Path(args.output).parent
@@ -270,7 +271,7 @@ def run_etl(args):
 
     for resource in resources:
         try:
-            local_path = download_resource(resource, raw_dir)
+            local_path = download_resource(resource, raw_dir, args.download_timeout)
             excel_file = pd.ExcelFile(local_path)
 
             revenue_sheet = None
@@ -334,6 +335,23 @@ def run_etl(args):
                 revenue_amount_col = 9
             if column_numeric_ratio(df_expenditure, expense_amount_col) < 0.05 and 17 in df_expenditure.columns:
                 expense_amount_col = 17
+
+            # Validate detected columns have non-empty data
+            def validate_column(df, col_index, col_name):
+                if col_index is None or col_index >= len(df.columns):
+                    raise ValueError(f"Could not detect {col_name}. Check Excel schema.")
+
+                col_data = df.iloc[:, col_index]
+                non_null_count = col_data.notna().sum()
+                if non_null_count == 0:
+                    raise ValueError(f"Detected {col_name} at index {col_index} but column is empty.")
+
+                print(f"✓ {col_name} detected at column {col_index} ({non_null_count} non-null values)")
+
+            validate_column(df_revenue, revenue_desc_col, "Revenue description")
+            validate_column(df_revenue, revenue_amount_col, "Revenue amount")
+            validate_column(df_expenditure, expense_desc_col, "Expense description")
+            validate_column(df_expenditure, expense_amount_col, "Expense amount")
 
             source_meta = {
                 "source_file": local_path.name,
@@ -419,10 +437,17 @@ def run_etl(args):
 
 
 def main():
+    # Load configuration
+    config = get_dataset_config("financial_return")
+    global_config = load_config()
+
     parser = argparse.ArgumentParser(description="ETL for Financial Information Return (Schedule 10 & 40).")
-    parser.add_argument("--package-id", default=DEFAULT_PACKAGE_ID)
-    parser.add_argument("--raw-dir", default="data/raw")
-    parser.add_argument("--output", default=DEFAULT_OUTPUT)
+    parser.add_argument("--package-id", default=config["package_id"])
+    parser.add_argument("--raw-dir", default=config["raw_dir"])
+    parser.add_argument("--output", default=f"{config['processed_dir']}/{config['output_filename']}")
+    parser.add_argument("--ckan-base-url", default=config["ckan_base_url"])
+    parser.add_argument("--ckan-timeout", type=int, default=config["ckan_timeout"])
+    parser.add_argument("--download-timeout", type=int, default=config["ckan_download_timeout"])
     parser.add_argument("--fiscal-years", type=int, nargs='+', help="Fiscal years to extract (e.g., 2024 2023 2022)")
 
     args = parser.parse_args()

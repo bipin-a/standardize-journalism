@@ -9,7 +9,8 @@
       "Bash(source .venv/bin/activate)",
       "Bash(python3:*)",
       "Bash(lsof:*)",
-      "WebFetch(domain:ckan0.cf.opendata.inter.prod-toronto.ca)"
+      "WebFetch(domain:ckan0.cf.opendata.inter.prod-toronto.ca)",
+      "Bash(python etl/capital_by_ward_etl.py:*)"
     ]
   }
 }

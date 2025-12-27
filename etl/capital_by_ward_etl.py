@@ -3,20 +3,21 @@ import argparse
 import json
 import os
 import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
 import requests
 
-CKAN_BASE_URL = "https://ckan0.cf.opendata.inter.prod-toronto.ca/api/3/action"
-DEFAULT_PACKAGE_ID = "budget-capital-budget-plan-by-ward-10-yr-approved"
-DEFAULT_OUTPUT = "data/processed/capital_by_ward.csv"
+# Add parent directory to path to import config_loader
+sys.path.insert(0, str(Path(__file__).parent))
+from config_loader import get_dataset_config, load_config
 
 
-def ckan_call(endpoint):
-    url = f"{CKAN_BASE_URL}/{endpoint}"
-    response = requests.get(url, timeout=30)
+def ckan_call(endpoint, base_url, timeout):
+    url = f"{base_url}/api/3/action/{endpoint}"
+    response = requests.get(url, timeout=timeout)
     response.raise_for_status()
     payload = response.json()
     if not payload.get("success"):
@@ -62,7 +63,7 @@ def select_resource(resources, prefer_by_ward=True):
     return candidates[0]
 
 
-def download_resource(resource, output_dir):
+def download_resource(resource, output_dir, timeout):
     url = resource.get("url")
     if not url:
         raise RuntimeError("Selected resource has no download URL.")
@@ -70,7 +71,7 @@ def download_resource(resource, output_dir):
     filename = Path(url.split("?")[0]).name
     destination = output_dir / filename
 
-    with requests.get(url, stream=True, timeout=60) as response:
+    with requests.get(url, stream=True, timeout=timeout) as response:
         response.raise_for_status()
         with open(destination, "wb") as handle:
             for chunk in response.iter_content(chunk_size=1024 * 1024):
@@ -284,7 +285,7 @@ def extract_rows(df, year_start, source_url, source_file):
 
 
 def run_etl(args):
-    package = ckan_call(f"package_show?id={args.package_id}")
+    package = ckan_call(f"package_show?id={args.package_id}", args.ckan_base_url, args.ckan_timeout)
     resources = package.get("resources", [])
 
     if args.resource_id:
@@ -299,7 +300,7 @@ def run_etl(args):
     output_dir = Path(args.output).parent
     raw_dir = Path(args.raw_dir)
 
-    local_path = download_resource(resource, raw_dir)
+    local_path = download_resource(resource, raw_dir, args.download_timeout)
     year_start = args.base_year
     if year_start is None:
         name_text = f"{resource.get('name', '')} {local_path.name}"
@@ -346,15 +347,25 @@ def run_etl(args):
 
 
 def main():
+    # Load configuration
+    config = get_dataset_config("capital_by_ward")
+    global_config = load_config()
+    json_default = None
+    if config.get("json_output_filename"):
+        json_default = f"{config['processed_dir']}/{config['json_output_filename']}"
+
     parser = argparse.ArgumentParser(description="ETL for capital budget by ward.")
-    parser.add_argument("--package-id", default=DEFAULT_PACKAGE_ID)
+    parser.add_argument("--package-id", default=config["package_id"])
     parser.add_argument("--resource-id")
-    parser.add_argument("--base-year", type=int)
+    parser.add_argument("--base-year", type=int, help="Base year for 10-year plan (auto-detected from resource name if not provided)")
     parser.add_argument("--sheet-name")
     parser.add_argument("--allow-details", action="store_true")
-    parser.add_argument("--raw-dir", default="data/raw")
-    parser.add_argument("--output", default=DEFAULT_OUTPUT)
-    parser.add_argument("--json-output")
+    parser.add_argument("--raw-dir", default=config["raw_dir"])
+    parser.add_argument("--output", default=f"{config['processed_dir']}/{config['output_filename']}")
+    parser.add_argument("--json-output", default=json_default)
+    parser.add_argument("--ckan-base-url", default=config["ckan_base_url"])
+    parser.add_argument("--ckan-timeout", type=int, default=config["ckan_timeout"])
+    parser.add_argument("--download-timeout", type=int, default=config["ckan_download_timeout"])
 
     args = parser.parse_args()
     run_etl(args)

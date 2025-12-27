@@ -1,0 +1,58 @@
+name: ETL Pipeline - Toronto Open Data
+
+on:
+  schedule:
+    # Run daily at 6 AM UTC (1 AM EST)
+    - cron: '0 6 * * *'
+  workflow_dispatch:  # Manual trigger button in GitHub UI
+
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
+
+jobs:
+  etl-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for GCP Workload Identity
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'  # Use 3.12 for better pandas/openpyxl compatibility
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install Python dependencies
+        run: uv pip install -r etl/requirements.txt --system
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Run ETL Pipeline
+        run: |
+          chmod +x scripts/publish_data_gcs.sh
+          CREATE_BUCKET=0 MAKE_PUBLIC=0 ./scripts/publish_data_gcs.sh
+
+      - name: Upload artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: etl-logs-${{ github.run_id }}
+          path: |
+            data/raw/
+            data/processed/
+            *.json
+          retention-days: 7

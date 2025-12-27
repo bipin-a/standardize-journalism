@@ -102,15 +102,24 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url)
     const requestedYear = Number.parseInt(searchParams.get('year'), 10)
-    const year = Number.isFinite(requestedYear) ? requestedYear : 2024
-
     const allRecords = await loadCapitalData()
+    const availableYears = [...new Set(allRecords.map(r => r.fiscal_year))].sort((a, b) => a - b)
+    if (availableYears.length === 0) {
+      return Response.json({
+        error: 'No capital budget data available',
+        availableYears
+      }, { status: 404 })
+    }
+
+    const year = Number.isFinite(requestedYear) && availableYears.includes(requestedYear)
+      ? requestedYear
+      : availableYears[availableYears.length - 1]
     const yearRecords = allRecords.filter(r => r.fiscal_year === year)
 
     if (yearRecords.length === 0) {
       return Response.json({
         error: `No capital budget data available for ${year}`,
-        availableYears: [...new Set(allRecords.map(r => r.fiscal_year))].sort()
+        availableYears
       }, { status: 404 })
     }
 

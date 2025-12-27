@@ -1,55 +1,336 @@
-# ETL: Capital Budget by Ward (Q1D)
+# Toronto Open Data ETL Pipeline
 
-This script downloads the latest "Capital Budget & Plan by Ward" XLSX from Toronto Open Data,
-normalizes it, and emits a long-format CSV suitable for ward-level rollups.
+This directory contains ETL scripts that download, parse, and normalize datasets from Toronto Open Data for the Toronto Money Flow project.
 
-## Dataset
+## Overview
 
-- Package ID: `budget-capital-budget-plan-by-ward-10-yr-approved`
-- Source: Toronto Open Data CKAN (XLSX resources, not datastore-active)
+The ETL pipeline processes five active datasets:
 
-The sheet typically includes:
-`Ward Number`, `Ward`, `Year 1`..`Year 10`, plus project metadata.
-Amounts are in thousands of dollars and are converted to dollars in the output.
+| Dataset | Script | Output | Update Frequency |
+|---------|--------|--------|------------------|
+| Capital Budget by Ward | `capital_by_ward_etl.py` | `capital_by_ward.csv` + `capital_by_ward.json` | Annual (as published) |
+| Financial Return (Revenue/Expenses) | `financial_return_etl.py` | `financial_return.json` | Annual (as published) |
+| Council Voting Records | `council_voting_etl.py` | `council_voting.json` | Weekly (as minutes are published) |
+| Lobbyist Registry Activity | `lobbyist_registry_etl.py` | `lobbyist_activity.json` | Daily (as published) |
+| Ward Boundaries (GeoJSON) | `publish_data_gcs.py` | `ward_boundaries.geojson` | As needed |
+
+All scripts:
+- Pull data from Toronto Open Data CKAN
+- Are configured via `config.yaml`
+- Output normalized JSON to `data/processed/`
+- Run automatically via GitHub Actions (daily at 6 AM UTC)
+
+## Configuration
+
+Dataset metadata is centralized in `config.yaml`:
+
+```yaml
+datasets:
+  capital_by_ward:
+    package_id: budget-capital-budget-plan-by-ward-10-yr-approved
+    output_filename: capital_by_ward.csv
+    json_output_filename: capital_by_ward.json
+    gcs_path_template: capital/{year_start}-{year_end}/capital_by_ward.json
+
+  financial_return:
+    package_id: 734d5877-f4de-4322-9851-882d22e1a11f
+    output_filename: financial_return.json
+    gcs_path_template: money-flow/{year_start}-{year_end}/financial_return.json
+
+  council_voting:
+    package_id: 7f5232d6-0d2a-4f95-864a-417cbf341cc4
+    resource_id: 55ead013-2331-4686-9895-9e8145b94189
+    output_filename: council_voting.json
+    gcs_path_template: council-voting/{year_start}-{year_end}/council_voting.json
+
+  lobbyist_registry:
+    package_id: 6a87b8bf-f4df-4762-b5dc-bf393336687b
+    resource_id: 94c1fe59-7247-4b92-b213-950f71e04aff
+    output_filename: lobbyist_activity.json
+    gcs_path_template: lobbyist-registry/{year_start}-{year_end}/lobbyist_activity.json
+
+  ward_geojson:
+    package_id: 5e7a8234-f805-43ac-820f-03d7c360b588
+    resource_id: 737b29e0-8329-4260-b6af-21555ab24f28
+    output_filename: ward_boundaries.geojson
+    gcs_path_template: ward-boundaries/ward_boundaries.geojson
+
+ckan:
+  base_url: https://ckan0.cf.opendata.inter.prod-toronto.ca
+  timeout: 30
+  download_timeout: 60
+```
+
+To update a dataset ID, edit `config.yaml` rather than modifying code.
 
 ## Setup
 
 ```bash
+# Create virtual environment
 uv venv
-source .venv/bin/activate
+source .venv/bin/activate  # or .venv\\Scripts\\activate on Windows
+
+# Install dependencies
 uv pip install -r etl/requirements.txt
 ```
 
-## Run
+Dependencies:
+- pandas - Data manipulation
+- openpyxl - Excel file parsing
+- requests - HTTP requests to CKAN API
+- pyyaml - Configuration loading
+
+## Usage
+
+### Manual Runs
+
+Each ETL can be run independently:
 
 ```bash
-python3 etl/capital_by_ward_etl.py
-```
-
-Common overrides:
-
-```bash
-python3 etl/capital_by_ward_etl.py \
-  --resource-id 6b774b3a-5e1a-4362-ba31-a3b07fce31db \
-  --base-year 2024 \
+# Capital budget by ward (XLSX download + parsing)
+uv run --with-requirements etl/requirements.txt -- \
+  python etl/capital_by_ward_etl.py \
   --output data/processed/capital_by_ward.csv \
   --json-output data/processed/capital_by_ward.json
+
+# Financial return (revenue + expenses, multiple XLSX resources)
+uv run --with-requirements etl/requirements.txt -- \
+  python etl/financial_return_etl.py \
+  --output data/processed/financial_return.json
+
+# Council voting (datastore API with pagination)
+uv run --with-requirements etl/requirements.txt -- \
+  python etl/council_voting_etl.py \
+  --output data/processed/council_voting.json
+
+# Lobbyist registry (ZIP download with XML parsing)
+uv run --with-requirements etl/requirements.txt -- \
+  python etl/lobbyist_registry_etl.py \
+  --output data/processed/lobbyist_activity.json
 ```
 
-## Output
+### Command-Line Overrides
 
-The CSV is long-format with one row per ward/year:
+All scripts support CLI overrides (config provides defaults):
 
-- `fiscal_year`
-- `ward_number`
-- `ward_name`
-- `amount` (dollars)
-- `year_offset` (1..10)
-- `source_file`
-- `source_url`
-- `ingested_at`
+```bash
+# Override package ID
+python etl/capital_by_ward_etl.py --package-id custom-package-id
 
-## Notes
+# Override base year for 10-year plan data
+python etl/capital_by_ward_etl.py --base-year 2025
 
-- If the resource name does not include a year range, pass `--base-year`.
-- Use `--allow-details` if the latest resource is named "details" but still contains ward columns.
+# Filter to specific fiscal years
+python etl/financial_return_etl.py --fiscal-years 2024 2023 2022
+
+# Filter to recent months
+python etl/council_voting_etl.py --recent-months 6
+python etl/lobbyist_registry_etl.py --recent-months 6
+
+# Override timeouts
+python etl/financial_return_etl.py --ckan-timeout 60 --download-timeout 120
+```
+
+### Automated Runs (GitHub Actions)
+
+The pipeline runs automatically via `.github/workflows/etl-pipeline.yml`:
+
+- Schedule: Daily at 6 AM UTC (1 AM EST)
+- Trigger: Manual workflow dispatch is enabled
+- Process:
+  1. Runs ETL scripts
+  2. Downloads ward boundaries
+  3. Builds dynamic GCS paths from data year ranges
+  4. Uploads JSON to Google Cloud Storage
+
+GCS Path Structure:
+- Capital: `gs://bucket/capital/{year_start}-{year_end}/capital_by_ward.json`
+- Financial: `gs://bucket/money-flow/{year_start}-{year_end}/financial_return.json`
+- Council Voting: `gs://bucket/council-voting/{year_start}-{year_end}/council_voting.json`
+- Lobbyist Registry: `gs://bucket/lobbyist-registry/{year_start}-{year_end}/lobbyist_activity.json`
+- Ward Boundaries: `gs://bucket/ward-boundaries/ward_boundaries.geojson`
+
+Paths are extracted dynamically from the data (no hardcoded years).
+
+## ETL Script Details
+
+### 1. capital_by_ward_etl.py
+
+Source: Capital Budget and Plan by Ward (10-Year Approved)
+Format: XLSX file with ward-level project budgets
+
+Output schema:
+```json
+[
+  {
+    "fiscal_year": 2024,
+    "ward_number": 11,
+    "ward_name": "University-Rosedale",
+    "amount": 42300000,
+    "year_offset": 1,
+    "program_name": "Water Infrastructure",
+    "project_name": "Watermain Replacement",
+    "category": "State of Good Repair",
+    "source_file": "capital-budget-2024.xlsx",
+    "source_url": "https://...",
+    "ingested_at": "2024-12-26T10:30:00Z"
+  }
+]
+```
+
+Notes:
+- Auto-detects year columns (Year 1-10 or actual years like 2024-2033)
+- Converts $000s into dollars
+- Ward number 0 represents city-wide projects
+
+### 2. financial_return_etl.py
+
+Source: Financial Information Return (Schedules 10 and 40)
+Format: Multiple XLSX files (one per year)
+
+Output schema:
+```json
+[
+  {
+    "fiscal_year": 2024,
+    "flow_type": "revenue",
+    "label": "Taxation - Property",
+    "line_description": "Taxation - Property (PIL)",
+    "amount": 5200000000,
+    "source_files": ["fir-2024.xlsx"],
+    "source_resource_ids": ["abc123"],
+    "source_resource_names": ["FIR 2024"],
+    "source_package_id": "734d5877-f4de-4322-9851-882d22e1a11f",
+    "ingested_at": "2024-12-26T10:30:00Z"
+  }
+]
+```
+
+Notes:
+- Aggregates duplicate labels across multiple resources
+- Validates detected columns have non-empty data
+- Handles negative amounts (parentheses notation)
+
+### 3. council_voting_etl.py
+
+Source: City Council Voting Records
+Format: CKAN datastore API
+
+Output schema (one record per motion):
+```json
+[
+  {
+    "meeting_date": "2024-11-15",
+    "motion_id": "CC24.15",
+    "motion_title": "Traffic Calming Implementation",
+    "motion_category": "transportation",
+    "vote_outcome": "passed",
+    "yes_votes": 20,
+    "no_votes": 5,
+    "absent_votes": 0,
+    "vote_margin": 15,
+    "votes": [
+      {
+        "councillor_name": "Jane Doe",
+        "vote": "Yes"
+      }
+    ],
+    "source_resource_id": "55ead013...",
+    "ingested_at": "2024-12-26T10:30:00Z"
+  }
+]
+```
+
+Notes:
+- Pagination handles datasets > 100K records
+- Auto-categorizes motions based on title keywords
+- Individual votes are included when councillor names are available
+
+### 4. lobbyist_registry_etl.py
+
+Source: Lobbyist Registry Activity
+Format: ZIP file containing XML
+
+Output schema:
+```json
+[
+  {
+    "registration_date": "2024-10-01",
+    "lobbyist_name": "John Doe",
+    "lobbyist_type": "Consultant",
+    "client_name": "ABC Corporation",
+    "subject_matter": "Rezoning for mixed-use development",
+    "subject_category": "housing_development",
+    "communication_date": "2024-11-15",
+    "public_office_holder": "Jane Smith, Councillor",
+    "source_resource_id": "94c1fe59...",
+    "ingested_at": "2024-12-26T10:30:00Z"
+  }
+]
+```
+
+Notes:
+- Uses resource_show URL directly (no hardcoded filename)
+- Parses XML activity records into normalized rows
+- Categories are assigned using keyword matching
+
+## Data Quality Notes
+
+The ETL scripts include basic fail-fast checks:
+- CKAN API responses must be successful
+- Required columns must be detected for XLSX parsing
+- Empty outputs raise errors
+- Year extraction must succeed for capital and financial data
+
+There is no full schema validation beyond these checks.
+
+## Publishing to GCS
+
+The `scripts/publish_data_gcs.sh` wrapper runs `etl/publish_data_gcs.py`, which:
+
+1. Runs all ETL scripts
+2. Downloads ward boundaries GeoJSON
+3. Extracts year ranges from outputs
+4. Uploads JSON to Google Cloud Storage
+
+Manual run:
+```bash
+chmod +x scripts/publish_data_gcs.sh
+CREATE_BUCKET=0 MAKE_PUBLIC=0 ./scripts/publish_data_gcs.sh
+```
+
+## Troubleshooting
+
+### "No fiscal years found in data"
+
+The ETL extracted data but could not find any `fiscal_year` values. Check:
+- Excel column headers match expected patterns (Year 1-10 or 2024-2033)
+- Resource name contains year range (e.g., "2024-2033")
+- Provide `--base-year` explicitly
+
+### "Could not detect column"
+
+Column detection failed. Check:
+- Excel schema changes in the source file
+- `--sheet-name` override to use the correct sheet
+
+### "No records parsed from any resources"
+
+No data was extracted. Check:
+- Package ID is correct in config.yaml
+- XLSX resources exist in the package
+- `--fiscal-years` filter is not too restrictive
+
+## Development
+
+Adding a new ETL:
+
+1. Create `etl/new_dataset_etl.py`
+2. Add config entry to `config.yaml`
+3. Use `get_dataset_config("new_dataset")`
+4. Add upload logic to `etl/publish_data_gcs.py` if it should be published
+
+## License
+
+Data: Open Government Licence - Toronto
+Code: See repository LICENSE

@@ -1,6 +1,6 @@
 # Toronto Money Flow v0.002
 
-A procurement transparency dashboard showing live contract data from Toronto Open Data, with governance health indicators.
+A Next.js dashboard for Toronto procurement, capital investment, money flow, and council decisions. Procurement data is fetched live from CKAN. Budget and governance data is pulled via ETL and served as JSON from local files or Google Cloud Storage.
 
 ## Product Spec
 
@@ -8,30 +8,47 @@ A procurement transparency dashboard showing live contract data from Toronto Ope
 
 ## What it does
 
-Analyzes Toronto city spending through two lenses:
+Analyzes Toronto city spending and governance across four lenses:
 
-### 1. Procurement Contracts
+### 1. Procurement Contracts (real-time)
 Fetches contract data from [Toronto Bids Awarded Contracts](https://open.toronto.ca/dataset/tobids-awarded-contracts/) and [Non-Competitive Contracts](https://open.toronto.ca/dataset/tobids-non-competitive-contracts/):
 
-- **Total contract values** (competitive and non-competitive)
-- **Vendor concentration metrics** (Top 1 and Top 10 vendor shares)
-- **Non-competitive share** (percentage of total spend and contracts)
-- **Top vendors** (top 10 vendors by awarded amount)
-- **Division breakdown** (top 8 divisions by spend)
-- **Category breakdown** (top 10 procurement categories)
-- **Median award size** (typical contract value)
-- **Governance health indicators** (with color-coded warnings)
+- Total contract values (competitive and non-competitive)
+- Vendor concentration metrics (Top 1 and Top 10 vendor shares)
+- Non-competitive share (percentage of total spend and contracts)
+- Top vendors (top 10 vendors by awarded amount)
+- Division breakdown (top 8 divisions by spend)
+- Category breakdown (top 10 procurement categories)
+- Median award size (typical contract value)
+- Governance health indicators (with thresholds)
 
-### 2. Capital Investment by Ward
+### 2. Capital Investment by Ward (ETL)
 Analyzes [Capital Budget by Ward](https://open.toronto.ca/dataset/budget-capital-budget-plan-by-ward-10-yr-approved/) to show geographic distribution:
 
-- **Total capital investment** (planned infrastructure and projects)
-- **City Wide vs Ward-Specific** split (reveals that 93% is city-wide)
-- **Top 5 and Bottom 5 wards** comparison
-- **Ward disparity metrics** (10,000x difference between top and bottom)
-- **Investment categories** (State of Good Repair, Growth, Service Improvement)
-- **Largest projects** with ward and program details
-- **Progressive disclosure** (click to see categories and projects)
+- Total capital investment (planned infrastructure and projects)
+- City-wide vs ward-specific split
+- Top 5 and bottom 5 wards comparison
+- Ward disparity ratio (top vs bottom ward)
+- Ward map visualization (choropleth)
+- Investment categories (top 5 categories by spend)
+- Largest projects with ward and program details
+- Progressive disclosure toggle for categories and projects
+
+### 3. Money Flow (Revenue vs Spending) (ETL)
+Summarizes how money comes in and goes out of the city budget:
+
+- Revenue vs expenditure totals
+- Top and bottom 7 funding sources
+- Top and bottom 7 spending categories
+- Surplus or deficit balance
+
+### 4. Council Decisions (Governance) (ETL)
+Tracks recent council activity and lobbying context:
+
+- Recent motions and outcomes (passed/failed)
+- Decision categories (transportation, housing, environment, etc.)
+- Councillor participation (votes cast and absences)
+- Lobbying activity summary (top subjects, communications count)
 
 ## Quick Start
 
@@ -43,151 +60,199 @@ npm install
 npm run dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000)
+Then open http://localhost:3000
 
 ## Project Structure
 
 ```
 toronto-money-flow/
 ├── app/
-│   ├── layout.js                    # Root layout
-│   ├── page.js                      # Main UI dashboard
+│   ├── layout.js
+│   ├── page.js
 │   └── api/
+│       ├── _lib/
+│       │   └── load-json.js
 │       ├── metric/
-│       │   └── route.js             # Procurement contracts API
-│       └── capital-by-ward/
-│           └── route.js             # Capital budget by ward API
+│       │   └── route.js
+│       ├── capital-by-ward/
+│       │   └── route.js
+│       ├── money-flow/
+│       │   └── route.js
+│       ├── council-decisions/
+│       │   └── route.js
+│       └── ward-map/
+│           └── route.js
 ├── etl/
-│   ├── capital_by_ward_etl.py       # ETL for capital budget XLSX
+│   ├── config.yaml
+│   ├── config_loader.py
+│   ├── capital_by_ward_etl.py
+│   ├── financial_return_etl.py
+│   ├── council_voting_etl.py
+│   ├── lobbyist_registry_etl.py
+│   ├── publish_data_gcs.py
 │   ├── requirements.txt
 │   └── README.md
+├── scripts/
+│   └── publish_data_gcs.sh
 ├── data/
-│   ├── raw/                         # Downloaded XLSX files
-│   └── processed/                   # Normalized CSV/JSON output
+│   ├── raw/
+│   └── processed/
 ├── package.json
 └── next.config.js
 ```
 
 ## How it works
 
-### Procurement Contracts (Real-time API)
-1. Frontend calls `/api/metric?year=2024`
-2. API fetches from Toronto Open Data CKAN API (live data)
-3. Aggregates contract values, vendor concentration, categories
-4. Returns JSON with governance metrics
+### Data Pipeline
 
-### Capital Investment (ETL + API)
-1. ETL downloads XLSX from Toronto Open Data (run: `python3 etl/capital_by_ward_etl.py`)
-2. Normalizes and enriches data (adds City Wide handling, filters zeros)
-3. Outputs to `data/processed/capital_by_ward.json`
-4. Frontend calls `/api/capital-by-ward?year=2024`
-5. API reads processed JSON and aggregates by ward
-6. Returns top/bottom wards, categories, disparity metrics
+The project uses an automated ETL pipeline that runs daily:
 
-### Money Flow (Revenue + Expenses)
-1. ETL downloads the Financial Information Return XLSX (run: `python3 etl/financial_return_etl.py`)
-2. Parses revenue + expense line items into `data/processed/financial_return.json`
-3. Frontend calls `/api/money-flow?year=2024`
-4. API reads the processed JSON and returns top/bottom groups and balance
+**ETL outputs (see `etl/README.md` for details):**
+1. Capital Budget by Ward -> `capital_by_ward.json` (and `capital_by_ward.csv`)
+2. Financial Return (revenue and expenses) -> `financial_return.json`
+3. Council Voting Records -> `council_voting.json`
+4. Lobbyist Registry Activity -> `lobbyist_activity.json`
+5. Ward Boundaries (GeoJSON) -> `ward_boundaries.geojson`
 
-## Deployment with External Data Hosting
+**Automation:**
+- All ETL scripts are orchestrated by `etl/publish_data_gcs.py`
+- `scripts/publish_data_gcs.sh` runs the orchestrator via `uv`
+- GitHub Actions runs the publish step daily (6 AM UTC)
+- Configuration is centralized in `etl/config.yaml`
 
-If you plan to host processed JSON externally, set these environment variables:
+### API Layer
 
-```
-CAPITAL_DATA_URL=https://your-host/capital_by_ward.json
-FINANCIAL_RETURN_URL=https://your-host/financial_return.json
-```
+**Procurement contracts (live CKAN):**
+- `/api/metric` fetches data directly from CKAN datastore resources
+- Aggregates totals, concentration metrics, and top groups
 
-When these are set, the API routes fetch data from the URLs and fall back to local `data/processed` only if the env vars are missing.
+**Capital investment (ETL-based):**
+- `/api/capital-by-ward` reads `capital_by_ward.json` (GCS if `CAPITAL_DATA_URL` is set)
+- Returns totals, top/bottom wards, category breakdown, and top projects
 
-### Google Cloud Storage Example
+**Money flow (ETL-based):**
+- `/api/money-flow` reads `financial_return.json` (GCS if `FINANCIAL_RETURN_URL` is set)
+- Returns top and bottom 7 revenue and expenditure groups plus balance
 
-Bucket layout:
+**Council decisions (ETL-based):**
+- `/api/council-decisions` reads `council_voting.json` and `lobbyist_activity.json`
+- Aggregates recent motions, decision categories, participation, and lobbying summary
 
-- `gs://standardize-journalism-data/money-flow/2024/financial_return.json`
-- `gs://standardize-journalism-data/capital/2020-2029/capital_by_ward.json`
+**Ward map (ETL-based):**
+- `/api/ward-map` reads `ward_boundaries.geojson` (GCS if `WARD_GEOJSON_URL` is set)
+- Merges ward geometry with capital investment totals
 
-Commands:
+## Deployment
 
-```
-# Generate JSON
-python3 etl/capital_by_ward_etl.py --json-output data/processed/capital_by_ward.json
-python3 etl/financial_return_etl.py --output data/processed/financial_return.json --raw-dir data/raw
+### Automated ETL (GitHub Actions)
 
-# Create bucket
-gcloud config set project standardize-journalism
-gcloud storage buckets create gs://standardize-journalism-data --location=us-central1 --uniform-bucket-level-access
+The repository includes automated ETL via `.github/workflows/etl-pipeline.yml`:
 
-# Upload
-gcloud storage cp data/processed/financial_return.json \
-  gs://standardize-journalism-data/money-flow/2024/financial_return.json \
-  --cache-control="public, max-age=3600"
-gcloud storage cp data/processed/capital_by_ward.json \
-  gs://standardize-journalism-data/capital/2020-2029/capital_by_ward.json \
-  --cache-control="public, max-age=3600"
+**Setup (one-time):**
+1. Configure GitHub Secrets:
+   - `GCP_PROJECT_ID`
+   - `GCS_BUCKET_NAME`
+   - `GCP_WORKLOAD_IDENTITY_PROVIDER`
+   - `GCP_SERVICE_ACCOUNT`
+2. Configure GCP Workload Identity
 
-# Make bucket public
-gcloud storage buckets add-iam-policy-binding gs://standardize-journalism-data \
-  --member=allUsers --role=roles/storage.objectViewer
-```
+**Runs automatically:**
+- Daily at 6 AM UTC (1 AM EST)
+- Manual trigger via workflow_dispatch
 
-Deployment env vars:
+### Manual publish to GCS
 
-```
-CAPITAL_DATA_URL=https://storage.googleapis.com/standardize-journalism-data/capital/2020-2029/capital_by_ward.json
-FINANCIAL_RETURN_URL=https://storage.googleapis.com/standardize-journalism-data/money-flow/2024/financial_return.json
+```bash
+chmod +x scripts/publish_data_gcs.sh
+CREATE_BUCKET=0 MAKE_PUBLIC=0 ./scripts/publish_data_gcs.sh
 ```
 
-## Data Source
+**GCS paths are dynamic** (extracted from data):
+- Capital: `gs://{bucket}/capital/{year_start}-{year_end}/capital_by_ward.json`
+- Money Flow: `gs://{bucket}/money-flow/{year_start}-{year_end}/financial_return.json`
+- Council Voting: `gs://{bucket}/council-voting/{year_start}-{year_end}/council_voting.json`
+- Lobbyist Registry: `gs://{bucket}/lobbyist-registry/{year_start}-{year_end}/lobbyist_activity.json`
+- Ward Boundaries: `gs://{bucket}/ward-boundaries/ward_boundaries.geojson`
 
-- **Datasets**: Toronto Bids Awarded Contracts, Toronto Bids Non-Competitive Contracts
-- **API**: CKAN Datastore API
-- **Endpoint**: `https://ckan0.cf.opendata.inter.prod-toronto.ca/api/3/action/datastore_search`
-- **Resource ID**: `e211f003-5909-4bea-bd96-d75899d8e612`
+### External data hosting
 
-## v0.002+ Features (Completed)
+If hosting processed JSON externally, set these environment variables:
 
-**Procurement Governance:**
-- [x] Vendor concentration metrics (Top 1, Top 10 share)
-- [x] Non-competitive contract share (amount and count)
-- [x] Category/commodity type breakdown
-- [x] Median award size calculation
-- [x] Governance health indicators
-- [x] Comprehensive caveats section
+```
+CAPITAL_DATA_URL=https://your-host/capital/2024-2033/capital_by_ward.json
+FINANCIAL_RETURN_URL=https://your-host/money-flow/2020-2024/financial_return.json
+VOTING_DATA_URL=https://your-host/council-voting/2022-2025/council_voting.json
+LOBBYIST_DATA_URL=https://your-host/lobbyist-registry/2022-2025/lobbyist_activity.json
+WARD_GEOJSON_URL=https://your-host/ward-boundaries/ward_boundaries.geojson
+```
 
-**Capital Investment by Ward (Q1D):**
-- [x] ETL pipeline for XLSX data normalization
-- [x] City Wide vs Ward-Specific analysis
-- [x] Top 5 / Bottom 5 ward comparison
-- [x] Ward disparity metrics (10,000x ratio)
-- [x] Investment by category (Growth, State of Good Repair, etc.)
-- [x] Project-level detail (top 10 largest projects)
-- [x] Progressive disclosure UI (hide/show details)
+When these are set, API routes fetch from the URLs and fall back to local `data/processed` when unset.
+
+## Data Sources
+
+All data is sourced from [Toronto Open Data](https://open.toronto.ca/):
+
+**ETL Pipeline:**
+- Capital Budget by Ward (XLSX)
+- Financial Information Return (Schedules 10 and 40) (XLSX)
+- Council Voting Records (Datastore API)
+- Lobbyist Registry Activity (ZIP/XML)
+- Ward Boundaries (GeoJSON)
+
+**Real-time API:**
+- Awarded Contracts (Datastore API)
+- Non-Competitive Contracts (Datastore API)
+
+CKAN Base URL: `https://ckan0.cf.opendata.inter.prod-toronto.ca`
+
+## v0.002 Features (Current)
+
+**Procurement governance:**
+- Vendor concentration metrics (Top 1, Top 10 share)
+- Non-competitive contract share (amount and count)
+- Category and division breakdowns
+- Median award size calculation
+- Governance health indicators and caveats
+
+**Capital investment by ward:**
+- ETL pipeline for XLSX normalization
+- City-wide vs ward-specific analysis
+- Top 5 / bottom 5 ward comparison
+- Ward disparity ratio
+- Ward map visualization
+- Category and project detail toggle
+
+**Money flow:**
+- Revenue vs spending totals
+- Top and bottom funding sources
+- Surplus or deficit balance
+
+**Council decisions:**
+- Recent motions and outcomes
+- Decision category breakdown
+- Councillor participation summary
+- Lobbyist activity summary
 
 **General:**
-- [x] Year selector (2020-2029 for capital, 2022-2024 for contracts)
+- Year selector (recent years; data availability varies by section)
+- External data URLs supported via environment variables
 
 ## Next Steps (v0.003)
 
-**High Priority (Q1B - Operating Budget):**
-- [ ] Operating budget by program ETL (similar to capital by ward)
-- [ ] Operating vs Capital comparison (where does money go?)
-- [ ] Year-over-year trends for operating spend
+**High priority:**
+- Operating budget by program ETL
+- Operating vs capital comparison
+- Year-over-year trends for operating spend
 
-**Medium Priority (Q2 - ROI & Outcomes):**
-- [ ] Service outcome datasets integration
-- [ ] Cost per outcome calculations
-- [ ] Infrastructure condition tracking
+**Medium priority:**
+- Per-capita ward investment (requires population data)
+- Deeper ward map interactions (click to highlight/lock)
+- Time-series charts for capital investment
 
-**Low Priority (UX Enhancements):**
-- [ ] Per-capita ward investment (requires population data)
-- [ ] Ward map visualization
-- [ ] Monthly trend charts for contracts
-- [ ] Interactive filtering and drill-down
-- [ ] Export to CSV functionality
+**Low priority:**
+- Export to CSV
+- Additional UI filters and drill-down
 
 ## ETL (Capital Budget by Ward)
 
-See `etl/README.md` for the first ETL pipeline that downloads the XLSX
-and outputs a normalized ward/year table.
+See `etl/README.md` for the ETL pipeline details.
