@@ -1,15 +1,61 @@
+import { readFile } from 'fs/promises'
+import { join } from 'path'
 import { loadJsonData } from '../_lib/load-json'
+import { getMoneyFlowIndexUrl, getFinancialReturnUrl } from '../_lib/gcs-urls'
 
 export const revalidate = 3600
 
 const LOCAL_DATA_PATH = 'data/processed/financial_return.json'
+const LOCAL_GOLD_INDEX_PATH = 'data/gold/money-flow/index.json'
 const GROUP_LIMIT = 7
 
-const loadMoneyFlowData = async () => {
+const loadLocalJson = async (localPath) => {
+  const fileContent = await readFile(join(process.cwd(), localPath), 'utf-8')
+  return JSON.parse(fileContent)
+}
+
+const fetchJson = async (url) => {
+  const response = await fetch(url, { next: { revalidate } })
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.statusText}`)
+  }
+  return response.json()
+}
+
+const loadMoneyFlowIndex = async () => {
+  const indexUrl = getMoneyFlowIndexUrl()
+  if (indexUrl) {
+    try {
+      return await fetchJson(indexUrl)
+    } catch (error) {
+      console.warn('Gold index fetch failed, trying local index:', error.message)
+    }
+  }
+  return loadLocalJson(LOCAL_GOLD_INDEX_PATH)
+}
+
+const loadMoneyFlowGold = async (year, index) => {
+  const localPath = `data/gold/money-flow/${year}.json`
+  try {
+    return await loadLocalJson(localPath)
+  } catch (error) {
+    // Ignore local file errors and fall back to remote
+  }
+
+  const goldUrl = index?.files?.[String(year)]
+  if (!goldUrl) {
+    throw new Error(`No gold URL available for ${year}`)
+  }
+  return fetchJson(goldUrl)
+}
+
+const loadMoneyFlowProcessed = async () => {
+  // Load full processed dataset for aggregation
   return loadJsonData({
-    envKey: 'FINANCIAL_RETURN_URL',
+    url: getFinancialReturnUrl(),
     localPath: LOCAL_DATA_PATH,
-    revalidateSeconds: revalidate
+    revalidateSeconds: revalidate,
+    cacheMode: 'no-store' // Avoid cache limit on large files
   })
 }
 
@@ -61,10 +107,32 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url)
     const requestedYear = Number.parseInt(searchParams.get('year'), 10)
 
-    const data = await loadMoneyFlowData()
-    const availableYears = [...new Set(data.map(record => Number(record.fiscal_year)))]
-      .filter(Number.isFinite)
-      .sort((a, b) => a - b)
+    let availableYears = []
+    let latestYear = null
+    let goldIndex = null
+    let data = null
+
+    try {
+      goldIndex = await loadMoneyFlowIndex()
+      if (Array.isArray(goldIndex?.availableYears)) {
+        availableYears = goldIndex.availableYears
+          .map(year => Number(year))
+          .filter(Number.isFinite)
+          .sort((a, b) => a - b)
+        const latest = Number(goldIndex.latestYear)
+        latestYear = Number.isFinite(latest) ? latest : availableYears[availableYears.length - 1]
+      }
+    } catch (error) {
+      console.warn('Gold index unavailable, falling back to processed data:', error.message)
+    }
+
+    if (availableYears.length === 0) {
+      data = await loadMoneyFlowProcessed()
+      availableYears = [...new Set(data.map(record => Number(record.fiscal_year)))]
+        .filter(Number.isFinite)
+        .sort((a, b) => a - b)
+      latestYear = availableYears[availableYears.length - 1]
+    }
 
     if (availableYears.length === 0) {
       return Response.json({
@@ -75,7 +143,7 @@ export async function GET(request) {
 
     const year = Number.isFinite(requestedYear)
       ? requestedYear
-      : availableYears[availableYears.length - 1]
+      : latestYear
 
     if (!availableYears.includes(year)) {
       return Response.json({
@@ -84,6 +152,21 @@ export async function GET(request) {
       }, { status: 404 })
     }
 
+    // Try loading pre-aggregated gold summary first
+    try {
+      const goldSummary = await loadMoneyFlowGold(year, goldIndex)
+      if (goldSummary && goldSummary.revenue) {
+        // Gold file exists and has expected shape - return it directly
+        return Response.json(goldSummary)
+      }
+    } catch (goldError) {
+      console.warn(`Gold summary unavailable for ${year}, falling back to aggregation:`, goldError.message)
+    }
+
+    // Fallback: aggregate from processed data (original behavior)
+    if (!data) {
+      data = await loadMoneyFlowProcessed()
+    }
     const yearRecords = data.filter(record => record.fiscal_year === year)
     const revenueRecords = yearRecords.filter(record => record.flow_type === 'revenue')
     const expenseRecords = yearRecords.filter(record => record.flow_type === 'expenditure')

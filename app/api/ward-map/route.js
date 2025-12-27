@@ -1,4 +1,5 @@
 import { loadJsonData } from '../_lib/load-json'
+import { getCapitalDataUrl, getWardGeoJsonUrl } from '../_lib/gcs-urls'
 
 export const revalidate = 3600
 
@@ -8,7 +9,7 @@ let wardGeoJSONCache = null
 
 const loadCapitalData = async () => {
   return loadJsonData({
-    envKey: 'CAPITAL_DATA_URL',
+    url: getCapitalDataUrl(),
     localPath: LOCAL_DATA_PATH,
     revalidateSeconds: revalidate,
     cacheMode: 'no-store'
@@ -21,7 +22,7 @@ const fetchWardGeoJSON = async () => {
   }
 
   const geoJSON = await loadJsonData({
-    envKey: 'WARD_GEOJSON_URL',
+    url: getWardGeoJsonUrl(),
     localPath: LOCAL_GEOJSON_PATH,
     revalidateSeconds: revalidate,
     cacheMode: 'no-store'

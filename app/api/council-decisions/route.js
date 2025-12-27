@@ -1,13 +1,42 @@
+import { readFile } from 'fs/promises'
+import { join } from 'path'
 import { loadJsonData } from '../_lib/load-json'
+import { getCouncilSummaryUrl, getVotingDataUrl, getLobbyistDataUrl } from '../_lib/gcs-urls'
 
 export const revalidate = 3600
 
 const VOTING_DATA_PATH = 'data/processed/council_voting.json'
 const LOBBYIST_DATA_PATH = 'data/processed/lobbyist_activity.json'
+const COUNCIL_SUMMARY_GOLD_PATH = 'data/gold/council-decisions/summary.json'
+
+const loadLocalJson = async (localPath) => {
+  const fileContent = await readFile(join(process.cwd(), localPath), 'utf-8')
+  return JSON.parse(fileContent)
+}
+
+const fetchJson = async (url) => {
+  const response = await fetch(url, { next: { revalidate } })
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.statusText}`)
+  }
+  return response.json()
+}
+
+const loadCouncilSummary = async () => {
+  const summaryUrl = getCouncilSummaryUrl()
+  if (summaryUrl) {
+    try {
+      return await fetchJson(summaryUrl)
+    } catch (error) {
+      console.warn('Gold council summary fetch failed, trying local file:', error.message)
+    }
+  }
+  return loadLocalJson(COUNCIL_SUMMARY_GOLD_PATH)
+}
 
 const loadVotingData = async () => {
   return loadJsonData({
-    envKey: 'VOTING_DATA_URL',
+    url: getVotingDataUrl(),
     localPath: VOTING_DATA_PATH,
     revalidateSeconds: revalidate,
     cacheMode: 'no-store'
@@ -16,7 +45,7 @@ const loadVotingData = async () => {
 
 const loadLobbyistData = async () => {
   return loadJsonData({
-    envKey: 'LOBBYIST_DATA_URL',
+    url: getLobbyistDataUrl(),
     localPath: LOBBYIST_DATA_PATH,
     revalidateSeconds: revalidate,
     cacheMode: 'no-store'
@@ -150,12 +179,21 @@ const aggregateLobbyingSummary = (lobbyingRecords) => {
 
 export async function GET(request) {
   try {
+    try {
+      const summary = await loadCouncilSummary()
+      if (summary && summary.recent_decisions) {
+        return Response.json(summary)
+      }
+    } catch (summaryError) {
+      console.warn('Council summary unavailable, falling back to raw data:', summaryError.message)
+    }
+
     const { searchParams } = new URL(request.url)
     const requestedYear = Number.parseInt(searchParams.get('year'), 10)
     const year = Number.isFinite(requestedYear) ? requestedYear : 2024
 
     const recentDays = Number.parseInt(searchParams.get('recent'), 10)
-    const recent = Number.isFinite(recentDays) ? recentDays : 90
+    const recent = Number.isFinite(recentDays) ? recentDays : 365
 
     // Load data
     const votingData = await loadVotingData()

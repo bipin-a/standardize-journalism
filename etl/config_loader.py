@@ -80,6 +80,7 @@ def get_dataset_config(dataset_name: str) -> Dict[str, Any]:
     dataset_config["ckan_download_timeout"] = config["ckan"].get("download_timeout", config["ckan"]["timeout"])
     dataset_config["raw_dir"] = config["storage"]["raw_dir"]
     dataset_config["processed_dir"] = config["storage"]["processed_dir"]
+    dataset_config["gold_dir"] = config["storage"]["gold_dir"]
 
     return dataset_config
 

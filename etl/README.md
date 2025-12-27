@@ -12,12 +12,15 @@ The ETL pipeline processes five active datasets:
 | Financial Return (Revenue/Expenses) | `financial_return_etl.py` | `financial_return.json` | Annual (as published) |
 | Council Voting Records | `council_voting_etl.py` | `council_voting.json` | Weekly (as minutes are published) |
 | Lobbyist Registry Activity | `lobbyist_registry_etl.py` | `lobbyist_activity.json` | Daily (as published) |
+| Council Decisions Summary | `publish_data_gcs.py` | `gold/council-decisions/summary.json` | Daily (derived) |
 | Ward Boundaries (GeoJSON) | `publish_data_gcs.py` | `ward_boundaries.geojson` | As needed |
+| ETL Run Manifest | `publish_data_gcs.py` | `metadata/etl_manifest_latest.json` | Daily (derived) |
 
 All scripts:
 - Pull data from Toronto Open Data CKAN
 - Are configured via `config.yaml`
-- Output normalized JSON to `data/processed/`
+- Output normalized JSON to `data/processed/` (full datasets)
+- Generate pre-aggregated summaries to `data/gold/` (API-ready responses)
 - Run automatically via GitHub Actions (daily at 6 AM UTC)
 
 ## Configuration
@@ -30,24 +33,24 @@ datasets:
     package_id: budget-capital-budget-plan-by-ward-10-yr-approved
     output_filename: capital_by_ward.csv
     json_output_filename: capital_by_ward.json
-    gcs_path_template: capital/{year_start}-{year_end}/capital_by_ward.json
+    gcs_path_template: processed/latest/capital_by_ward.json
 
   financial_return:
     package_id: 734d5877-f4de-4322-9851-882d22e1a11f
     output_filename: financial_return.json
-    gcs_path_template: money-flow/{year_start}-{year_end}/financial_return.json
+    gcs_path_template: processed/latest/financial_return.json
 
   council_voting:
     package_id: 7f5232d6-0d2a-4f95-864a-417cbf341cc4
     resource_id: 55ead013-2331-4686-9895-9e8145b94189
     output_filename: council_voting.json
-    gcs_path_template: council-voting/{year_start}-{year_end}/council_voting.json
+    gcs_path_template: processed/latest/council_voting.json
 
   lobbyist_registry:
     package_id: 6a87b8bf-f4df-4762-b5dc-bf393336687b
     resource_id: 94c1fe59-7247-4b92-b213-950f71e04aff
     output_filename: lobbyist_activity.json
-    gcs_path_template: lobbyist-registry/{year_start}-{year_end}/lobbyist_activity.json
+    gcs_path_template: processed/latest/lobbyist_activity.json
 
   ward_geojson:
     package_id: 5e7a8234-f805-43ac-820f-03d7c360b588
@@ -107,7 +110,31 @@ uv run --with-requirements etl/requirements.txt -- \
 uv run --with-requirements etl/requirements.txt -- \
   python etl/lobbyist_registry_etl.py \
   --output data/processed/lobbyist_activity.json
+
+# Generate gold summaries from existing processed files
+uv run --with-requirements etl/requirements.txt -- \
+  python etl/generate_gold.py
 ```
+
+### Gold File Generation
+
+After processed files exist, generate pre-aggregated API summaries:
+
+```bash
+# Generate all gold summaries (from existing processed files)
+uv run --with-requirements etl/requirements.txt -- python etl/generate_gold.py
+```
+
+This creates:
+- `data/gold/money-flow/{year}.json` - One file per fiscal year (~4KB each)
+- `data/gold/money-flow/index.json` - Available years + per-year URLs
+- `data/gold/capital/{year}.json` - One file per fiscal year (~9KB each)
+- `data/gold/capital/index.json` - Available years + per-year URLs
+- `data/gold/council-decisions/summary.json` - Rolling 365-day summary (~14KB)
+
+**When to run**: After ETL scripts complete, or manually when testing API response shapes locally.
+
+**How it works**: Re-implements API aggregation logic in Python to match exact response shapes from `/api/money-flow`, `/api/capital-by-ward`, and `/api/council-decisions`.
 
 ### Command-Line Overrides
 
@@ -144,11 +171,14 @@ The pipeline runs automatically via `.github/workflows/etl-pipeline.yml`:
   4. Uploads JSON to Google Cloud Storage
 
 GCS Path Structure:
-- Capital: `gs://bucket/capital/{year_start}-{year_end}/capital_by_ward.json`
-- Financial: `gs://bucket/money-flow/{year_start}-{year_end}/financial_return.json`
-- Council Voting: `gs://bucket/council-voting/{year_start}-{year_end}/council_voting.json`
-- Lobbyist Registry: `gs://bucket/lobbyist-registry/{year_start}-{year_end}/lobbyist_activity.json`
+- Processed Latest: `gs://bucket/processed/latest/{capital_by_ward,financial_return,council_voting,lobbyist_activity}.json`
+- Council Summary: `gs://bucket/gold/council-decisions/summary.json`
 - Ward Boundaries: `gs://bucket/ward-boundaries/ward_boundaries.geojson`
+- Gold Money Flow: `gs://bucket/gold/money-flow/{year}.json`
+- Gold Money Flow Index: `gs://bucket/gold/money-flow/index.json`
+- Gold Capital: `gs://bucket/gold/capital/{year}.json`
+- Gold Capital Index: `gs://bucket/gold/capital/index.json`
+- ETL Manifest (latest): `gs://bucket/metadata/etl_manifest_latest.json`
 
 Paths are extracted dynamically from the data (no hardcoded years).
 
@@ -290,8 +320,9 @@ The `scripts/publish_data_gcs.sh` wrapper runs `etl/publish_data_gcs.py`, which:
 
 1. Runs all ETL scripts
 2. Downloads ward boundaries GeoJSON
-3. Extracts year ranges from outputs
-4. Uploads JSON to Google Cloud Storage
+3. Builds a council decisions summary JSON
+4. Extracts year ranges from outputs
+5. Uploads JSON to Google Cloud Storage
 
 Manual run:
 ```bash

@@ -80,6 +80,7 @@ Procurement datasets are read live via CKAN in `/api/metric`.
 ### 5.1 ETL Orchestration
 
 `etl/publish_data_gcs.py` runs all ETL scripts and uploads outputs to GCS.
+It also builds a small council summary JSON for the UI.
 
 Wrapper:
 ```
@@ -98,6 +99,7 @@ GitHub Actions workflow: `.github/workflows/etl-pipeline.yml`
 The app reads external data from URLs when these are set:
 - `CAPITAL_DATA_URL`
 - `FINANCIAL_RETURN_URL`
+- `COUNCIL_SUMMARY_URL`
 - `VOTING_DATA_URL`
 - `LOBBYIST_DATA_URL`
 - `WARD_GEOJSON_URL`

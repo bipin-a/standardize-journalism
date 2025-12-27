@@ -98,7 +98,61 @@ Notes:
 ]
 ```
 
-### 1.5 ward_boundaries.geojson
+### 1.5 gold/council-decisions/summary.json
+
+```json
+{
+  "recent_decisions": [
+    {
+      "meeting_date": "2024-12-15",
+      "motion_id": "MM4.1",
+      "motion_title": "Climate Action Funding",
+      "motion_category": "environment",
+      "vote_outcome": "passed",
+      "yes_votes": 20,
+      "no_votes": 5,
+      "absent_votes": 0,
+      "vote_margin_percent": "80.0"
+    }
+  ],
+  "decision_categories": [
+    {
+      "category": "environment",
+      "label": "Environment & Climate",
+      "total_motions": 12,
+      "passed": 10,
+      "failed": 2,
+      "pass_rate": 83.3
+    }
+  ],
+  "councillor_voting_patterns": [
+    {
+      "councillor_name": "Jane Doe",
+      "votes_cast": 45,
+      "yes_votes": 38,
+      "no_votes": 5,
+      "absent": 2,
+      "participation_rate": 95.6
+    }
+  ],
+  "lobbying_summary": {
+    "active_registrations": 234,
+    "recent_communications": 45,
+    "top_subjects": ["housing_development", "transportation", "environment"]
+  },
+  "metadata": {
+    "year": 2024,
+    "recent_days": 365,
+    "total_motions": 12,
+    "motions_passed": 10,
+    "motions_failed": 2,
+    "pass_rate": "83.3"
+  },
+  "timestamp": "2024-12-26T10:30:00Z"
+}
+```
+
+### 1.6 ward_boundaries.geojson
 
 ```json
 {
@@ -116,6 +170,20 @@ Notes:
       }
     }
   ]
+}
+```
+
+### 1.7 gold index files (money-flow & capital)
+
+```json
+{
+  "availableYears": [2020, 2021, 2022, 2023, 2024],
+  "latestYear": 2024,
+  "files": {
+    "2020": "https://storage.googleapis.com/standardize-journalism-data/gold/money-flow/2020.json",
+    "2021": "https://storage.googleapis.com/standardize-journalism-data/gold/money-flow/2021.json"
+  },
+  "timestamp": "2024-12-26T10:30:00Z"
 }
 ```
 

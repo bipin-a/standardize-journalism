@@ -1,15 +1,60 @@
+import { readFile } from 'fs/promises'
+import { join } from 'path'
 import { loadJsonData } from '../_lib/load-json'
+import { getCapitalIndexUrl, getCapitalDataUrl } from '../_lib/gcs-urls'
 
 export const revalidate = 3600
 
 const LOCAL_DATA_PATH = 'data/processed/capital_by_ward.json'
+const LOCAL_GOLD_INDEX_PATH = 'data/gold/capital/index.json'
 
-const loadCapitalData = async () => {
+const loadLocalJson = async (localPath) => {
+  const fileContent = await readFile(join(process.cwd(), localPath), 'utf-8')
+  return JSON.parse(fileContent)
+}
+
+const fetchJson = async (url) => {
+  const response = await fetch(url, { next: { revalidate } })
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.statusText}`)
+  }
+  return response.json()
+}
+
+const loadCapitalIndex = async () => {
+  const indexUrl = getCapitalIndexUrl()
+  if (indexUrl) {
+    try {
+      return await fetchJson(indexUrl)
+    } catch (error) {
+      console.warn('Gold index fetch failed, trying local index:', error.message)
+    }
+  }
+  return loadLocalJson(LOCAL_GOLD_INDEX_PATH)
+}
+
+const loadCapitalGold = async (year, index) => {
+  const localPath = `data/gold/capital/${year}.json`
+  try {
+    return await loadLocalJson(localPath)
+  } catch (error) {
+    // Ignore local file errors and fall back to remote
+  }
+
+  const goldUrl = index?.files?.[String(year)]
+  if (!goldUrl) {
+    throw new Error(`No gold URL available for ${year}`)
+  }
+  return fetchJson(goldUrl)
+}
+
+const loadCapitalProcessed = async () => {
+  // Load full processed dataset for aggregation
   return loadJsonData({
-    envKey: 'CAPITAL_DATA_URL',
+    url: getCapitalDataUrl(),
     localPath: LOCAL_DATA_PATH,
     revalidateSeconds: revalidate,
-    cacheMode: 'no-store'
+    cacheMode: 'no-store' // Avoid cache limit on large files
   })
 }
 
@@ -103,8 +148,31 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url)
     const requestedYear = Number.parseInt(searchParams.get('year'), 10)
-    const allRecords = await loadCapitalData()
-    const availableYears = [...new Set(allRecords.map(r => r.fiscal_year))].sort((a, b) => a - b)
+
+    let availableYears = []
+    let latestYear = null
+    let goldIndex = null
+    let allRecords = null
+
+    try {
+      goldIndex = await loadCapitalIndex()
+      if (Array.isArray(goldIndex?.availableYears)) {
+        availableYears = goldIndex.availableYears
+          .map(year => Number(year))
+          .filter(Number.isFinite)
+          .sort((a, b) => a - b)
+        const latest = Number(goldIndex.latestYear)
+        latestYear = Number.isFinite(latest) ? latest : availableYears[availableYears.length - 1]
+      }
+    } catch (error) {
+      console.warn('Gold index unavailable, falling back to processed data:', error.message)
+    }
+
+    if (availableYears.length === 0) {
+      allRecords = await loadCapitalProcessed()
+      availableYears = [...new Set(allRecords.map(r => r.fiscal_year))].sort((a, b) => a - b)
+      latestYear = availableYears[availableYears.length - 1]
+    }
     if (availableYears.length === 0) {
       return Response.json({
         error: 'No capital budget data available',
@@ -114,7 +182,23 @@ export async function GET(request) {
 
     const year = Number.isFinite(requestedYear) && availableYears.includes(requestedYear)
       ? requestedYear
-      : availableYears[availableYears.length - 1]
+      : latestYear
+
+    // Try loading pre-aggregated gold summary first
+    try {
+      const goldSummary = await loadCapitalGold(year, goldIndex)
+      if (goldSummary && goldSummary.topWards) {
+        // Gold file exists and has expected shape - return it directly
+        return Response.json(goldSummary)
+      }
+    } catch (goldError) {
+      console.warn(`Gold summary unavailable for ${year}, falling back to aggregation:`, goldError.message)
+    }
+
+    // Fallback: aggregate from processed data (original behavior)
+    if (!allRecords) {
+      allRecords = await loadCapitalProcessed()
+    }
     const yearRecords = allRecords.filter(r => r.fiscal_year === year)
 
     if (yearRecords.length === 0) {
