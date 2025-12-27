@@ -8,7 +8,8 @@ const loadCapitalData = async () => {
   return loadJsonData({
     envKey: 'CAPITAL_DATA_URL',
     localPath: LOCAL_DATA_PATH,
-    revalidateSeconds: revalidate
+    revalidateSeconds: revalidate,
+    cacheMode: 'no-store'
   })
 }
 

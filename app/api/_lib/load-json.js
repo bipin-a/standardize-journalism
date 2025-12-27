@@ -1,10 +1,18 @@
 import { readFile } from 'fs/promises'
 import { join } from 'path'
 
-export const loadJsonData = async ({ envKey, localPath, revalidateSeconds }) => {
+export const loadJsonData = async ({
+  envKey,
+  localPath,
+  revalidateSeconds,
+  cacheMode = 'revalidate'
+}) => {
   const url = process.env[envKey]
   if (url) {
-    const response = await fetch(url, { next: { revalidate: revalidateSeconds } })
+    const fetchOptions = cacheMode === 'no-store'
+      ? { cache: 'no-store' }
+      : { next: { revalidate: revalidateSeconds } }
+    const response = await fetch(url, fetchOptions)
     if (!response.ok) {
       throw new Error(`Failed to fetch ${envKey} from ${url}: ${response.statusText}`)
     }

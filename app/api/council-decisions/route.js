@@ -9,7 +9,8 @@ const loadVotingData = async () => {
   return loadJsonData({
     envKey: 'VOTING_DATA_URL',
     localPath: VOTING_DATA_PATH,
-    revalidateSeconds: revalidate
+    revalidateSeconds: revalidate,
+    cacheMode: 'no-store'
   })
 }
 
@@ -17,7 +18,8 @@ const loadLobbyistData = async () => {
   return loadJsonData({
     envKey: 'LOBBYIST_DATA_URL',
     localPath: LOBBYIST_DATA_PATH,
-    revalidateSeconds: revalidate
+    revalidateSeconds: revalidate,
+    cacheMode: 'no-store'
   })
 }
 
