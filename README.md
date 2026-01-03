@@ -33,6 +33,7 @@ flowchart LR
 
   subgraph Storage [GCS]
     G1[Processed latest\nprocessed/latest/*]
+    G1b[Processed by year\nprocessed/{dataset}/{year}.json]
     G2[Gold\n gold/*]
     G3[Manifest\nmetadata/etl_manifest_latest.json]
   end
@@ -55,6 +56,7 @@ flowchart LR
   E4 --> E5
   E1 --> E6
   E3 --> G1
+  E3 --> G1b
   E4 --> G2
   E6 --> G3
   G2 --> A1
@@ -113,8 +115,8 @@ The project uses a three-tier data architecture optimized for performance and co
 - **Purpose**: Pre-computed API responses ready for UI consumption
 - **Location**: `data/gold/` locally, `gs://{bucket}/gold/` in GCS
 - **Size**: 4-14KB per file (99% smaller than processed files)
-- **Format**: One JSON file per year for money-flow and capital; single file for council decisions
-- **Index**: `gold/money-flow/index.json` and `gold/capital/index.json` list available years and per-year URLs
+- **Format**: One JSON file per year for money-flow, capital, and council decisions, plus a rolling council summary
+- **Index**: `gold/money-flow/index.json`, `gold/capital/index.json`, and `gold/council-decisions/index.json` list available years and per-year URLs
 - **Generation**: Created during ETL by `publish_data_gcs.py`
 - **Benefits**:
   - Eliminates runtime aggregation (faster API responses)
@@ -123,9 +125,9 @@ The project uses a three-tier data architecture optimized for performance and co
 
 ### Processed Tier (Full Normalized Datasets)
 - **Purpose**: Complete datasets used as fallback if gold tier unavailable
-- **Location**: `data/processed/` locally, `gs://{bucket}/{dataset}/` in GCS
+- **Location**: `data/processed/` locally, `gs://{bucket}/processed/latest/` in GCS (plus per-year splits)
 - **Size**: 50KB - 71MB per file
-- **Format**: One JSON file per dataset (all years combined)
+- **Format**: One JSON file per dataset (all years combined), plus per-year files for capital, money-flow, council, and lobbyist
 - **Usage**: APIs load these only if gold files missing, then aggregate at runtime
 
 ### Raw Tier (ETL Intermediates)
@@ -194,18 +196,22 @@ toronto-money-flow/
 The project uses an automated ETL pipeline that runs daily:
 
 **ETL outputs (see `etl/README.md` for details):**
-1. Capital Budget by Ward -> `capital_by_ward.json` (and `capital_by_ward.csv`)
-2. Financial Return (revenue and expenses) -> `financial_return.json`
-3. Council Voting Records -> `council_voting.json`
-4. Lobbyist Registry Activity -> `lobbyist_activity.json`
+1. Capital Budget by Ward -> `capital_by_ward.json` (and `capital_by_ward.csv`, plus `data/processed/capital-by-ward/{year}.json`)
+2. Financial Return (revenue and expenses) -> `financial_return.json` (plus `data/processed/financial-return/{year}.json`)
+3. Council Voting Records -> `council_voting.json` (plus `data/processed/council-voting/{year}.json`)
+4. Lobbyist Registry Activity -> `lobbyist_activity.json` (plus `data/processed/lobbyist-registry/{year}.json`)
 5. Ward Boundaries (GeoJSON) -> `ward_boundaries.geojson`
 6. ETL run manifest -> `data/processed/metadata/etl_manifest_latest.json`
+
+Note: Capital per-year files include planned future years from the 10-year plan (projections).
 
 **Gold outputs (API-ready summaries):**
 1. Money Flow summaries -> `data/gold/money-flow/{year}.json`
 2. Capital summaries -> `data/gold/capital/{year}.json`
-3. Council Decisions summary -> `data/gold/council-decisions/summary.json`
-4. Gold indexes -> `data/gold/money-flow/index.json`, `data/gold/capital/index.json`
+3. Council Decisions summaries -> `data/gold/council-decisions/{year}.json` + rolling `summary.json`
+4. Trends -> `data/gold/money-flow/trends.json`, `data/gold/capital/trends.json`, `data/gold/council-decisions/trends.json`
+5. Gold indexes -> `data/gold/money-flow/index.json`, `data/gold/capital/index.json`, `data/gold/council-decisions/index.json`
+6. RAG index -> `data/gold/rag/index.json`
 
 **Automation:**
 - All ETL scripts are orchestrated by `etl/publish_data_gcs.py`
@@ -230,8 +236,8 @@ The project uses an automated ETL pipeline that runs daily:
 - Returns top and bottom 7 revenue and expenditure groups plus balance
 
 **Council decisions (ETL-based):**
-- `/api/council-decisions` reads the gold summary from `GCS_BASE_URL` (or `COUNCIL_SUMMARY_URL` override)
-- Falls back to `council_voting.json` and `lobbyist_activity.json` if the summary is missing
+- `/api/council-decisions` reads `gold/council-decisions/{year}.json` when `?year=` is set (or falls back to the rolling summary)
+- Falls back to `council_voting.json` and `lobbyist_activity.json` if gold is missing
 
 **Ward map (ETL-based):**
 - `/api/ward-map` reads `ward_boundaries.geojson` from `GCS_BASE_URL` (or `WARD_GEOJSON_URL` override)
@@ -278,17 +284,27 @@ CREATE_BUCKET=0 MAKE_PUBLIC=0 ./scripts/publish_data_gcs.sh
 ```
 
 **GCS paths**:
-- Council Summary (gold): `gs://{bucket}/gold/council-decisions/summary.json`
+- Council Decisions (gold): `gs://{bucket}/gold/council-decisions/{year}.json`
+- Council Summary (gold, rolling): `gs://{bucket}/gold/council-decisions/summary.json`
+- Council Index: `gs://{bucket}/gold/council-decisions/index.json`
 - Ward Boundaries: `gs://{bucket}/ward-boundaries/ward_boundaries.geojson`
 - Processed Latest (stable fallback):
   - `gs://{bucket}/processed/latest/capital_by_ward.json`
   - `gs://{bucket}/processed/latest/financial_return.json`
   - `gs://{bucket}/processed/latest/council_voting.json`
   - `gs://{bucket}/processed/latest/lobbyist_activity.json`
+- Processed Capital by Year: `gs://{bucket}/processed/capital-by-ward/{year}.json`
+- Processed Money Flow by Year: `gs://{bucket}/processed/financial-return/{year}.json`
+- Processed Council by Year: `gs://{bucket}/processed/council-voting/{year}.json`
+- Processed Lobbyist by Year: `gs://{bucket}/processed/lobbyist-registry/{year}.json`
 - Gold Money Flow: `gs://{bucket}/gold/money-flow/{year}.json`
 - Gold Money Flow Index: `gs://{bucket}/gold/money-flow/index.json`
+- Gold Money Flow Trends: `gs://{bucket}/gold/money-flow/trends.json`
 - Gold Capital: `gs://{bucket}/gold/capital/{year}.json`
 - Gold Capital Index: `gs://{bucket}/gold/capital/index.json`
+- Gold Capital Trends: `gs://{bucket}/gold/capital/trends.json`
+- Gold Council Trends: `gs://{bucket}/gold/council-decisions/trends.json`
+- Gold RAG Index: `gs://{bucket}/gold/rag/index.json`
 - ETL Manifest (latest): `gs://{bucket}/metadata/etl_manifest_latest.json`
 
 ### External data hosting
@@ -305,6 +321,9 @@ Optional overrides (only if you need to point a specific dataset elsewhere):
 MONEY_FLOW_GOLD_INDEX_URL=https://your-host/gold/money-flow/index.json
 CAPITAL_GOLD_INDEX_URL=https://your-host/gold/capital/index.json
 COUNCIL_SUMMARY_URL=https://your-host/gold/council-decisions/summary.json
+COUNCIL_INDEX_URL=https://your-host/gold/council-decisions/index.json
+COUNCIL_TRENDS_URL=https://your-host/gold/council-decisions/trends.json
+RAG_INDEX_URL=https://your-host/gold/rag/index.json
 CAPITAL_DATA_URL=https://your-host/processed/latest/capital_by_ward.json
 FINANCIAL_RETURN_URL=https://your-host/processed/latest/financial_return.json
 VOTING_DATA_URL=https://your-host/processed/latest/council_voting.json
@@ -362,6 +381,168 @@ CKAN Base URL: `https://ckan0.cf.opendata.inter.prod-toronto.ca`
 **General:**
 - Year selector (recent years; data availability varies by section)
 - External data URLs supported via environment variables
+
+## AI Chat Assistant
+
+### What It Does
+
+The Toronto Money Flow dashboard includes an AI-powered chat assistant that helps users explore the data through natural language questions. The chatbot:
+
+- Answers questions **strictly from gold data summaries** (no external knowledge)
+- Provides source citations for every answer
+- Uses simple, teen-friendly language
+- Refuses to answer questions outside its data scope
+- Supports both Anthropic Claude and OpenAI GPT models
+
+**Floating widget** appears in the bottom-right corner of the dashboard. Click to open, ask questions, and view responses with sources.
+
+### How It Works
+
+**Data-Bounded Responses:**
+The chatbot is strictly limited to answering from available data sources (no external knowledge):
+- Gold summaries and trends (money flow, capital, council)
+- Processed records for detail filters (capital projects, council votes, lobbyist activity)
+- Live CKAN for procurement metrics
+
+If the answer isn't in the data, the chatbot politely refuses and explains its limitations.
+Responses include both a data file reference (gold/processed/CKAN when applicable) and the related API endpoint when available.
+
+**Routing (Tools + RAG):**
+The chat stack uses an LLM tool router with strict validation, then falls back to RAG (filters/embeddings):
+- LLM router (`tool-router.js`) selects a tool + params using the schemas, then gets validated and normalized.
+- Tool results return immediately with a structured response envelope (no LLM rewrite by default).
+- If no tool applies, the system uses entity filters or embeddings.
+- If neither returns data, the system fails closed with a "no answer" response.
+
+```text
+User question
+  |
+  v
+LLM Tool Router (tool-router)
+  |-- match --> Tool Executor --> response (retrievalType=tool)
+  |
+  v
+Entity Filters (processed-retriever)
+  |-- hits --> RAG response (ragStrategy=filters)
+  |
+  v
+Embeddings Search (rag-retriever)
+  |-- hits --> RAG response (ragStrategy=embeddings)
+  |
+  v
+Fail-closed response (no answer)
+```
+
+**Routing metadata:**
+- `metadata.retrievalType` is always either `tool` or `rag`.
+- For `tool`, `metadata.tool` and `metadata.toolDataset` identify the exact tool used.
+- For `tool`, `metadata.toolRoutingConfidence` reflects the router confidence score (0-1).
+- For `rag`, `metadata.ragStrategy` is one of `filters` or `embeddings`.
+
+**System Prompt Enforcement:**
+A strict system prompt ensures:
+- Only answers from provided data
+- Concise responses (2-3 sentences max)
+- Always cites sources
+- Formats currency as CAD
+- Uses simple language for teenage audience
+
+### Configuration
+
+**Required:**
+```bash
+# Choose your LLM provider
+LLM_PROVIDER=anthropic  # or 'openai'
+
+# Anthropic API key (if using Claude)
+ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
+
+# OR OpenAI API key (if using GPT)
+OPENAI_API_KEY=sk-xxxxx
+```
+
+**Optional:**
+```bash
+# Anthropic model (default: claude-3-5-sonnet-20241022)
+ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
+
+# OpenAI model (default: gpt-4o-mini)
+OPENAI_MODEL=gpt-4o-mini
+
+# Enable chat logging to data/logs/chat_history.jsonl (default: false)
+CHAT_ENABLE_LOGGING=true
+
+# Optional: override log directory
+# Defaults to data/logs locally, /tmp/standardize-journalism-logs in production
+# CHAT_LOG_DIR=/tmp/standardize-journalism-logs
+
+```
+
+### Rate Limiting
+
+To prevent abuse while allowing educational exploration:
+- **20 messages per minute** per user
+- Token bucket algorithm (refills at 20 tokens/minute)
+- Client identified by IP + User-Agent
+- In-memory storage (no external dependencies)
+
+If rate limited, users see a friendly message with retry time.
+
+### Suggested Questions
+
+The chat widget displays suggested questions to help users get started:
+- "What was Toronto's biggest expense in 2024?"
+- "Which ward got the most capital funding?"
+- "How much did the city spend on transit?"
+- "What was the budget surplus or deficit?"
+- "What decisions did council make recently?"
+- "How much was spent on police?"
+
+### Scope and Limitations
+
+**What it CAN answer:**
+- Questions about Toronto's budget, revenue, and expenses
+- Questions about capital projects and ward investments
+- Questions about council decisions and voting patterns
+- Questions about lobbying activity
+- Year-specific queries (if data available for that year)
+
+**What it CANNOT answer:**
+- Questions unrelated to Toronto municipal government
+- Questions about data it doesn't have
+- Speculative or hypothetical questions
+- Questions requiring external knowledge
+- Questions about future budgets outside the published capital plan
+
+Note: Capital plan years are labeled as planned allocations (not final actuals).
+
+**Privacy:**
+- API keys are server-side only (never exposed to browser)
+- Optional logging stores: timestamp, message, answer, sources, IP (not full User-Agent)
+- Production logs default to `/tmp` unless `CHAT_LOG_DIR` is set
+- No conversation history persistence (each session starts fresh)
+
+### Architecture
+
+**Backend:**
+- `/api/chat` - Main chat endpoint (Next.js API route)
+- `/api/chat/health` - Health check (gold data + provider config)
+- `app/api/_lib/llm-providers.js` - Provider abstraction (Claude/OpenAI)
+- `app/api/_lib/rate-limiter.js` - Token bucket rate limiting
+- `app/api/_lib/context-builder.js` - Tool routing + RAG context builder
+- `app/api/_lib/tool-router.js` - LLM tool router with guardrails
+- `app/api/_lib/tool-executor.js` - Deterministic tool execution
+- `app/api/_lib/response-builder.js` - Structured response envelopes
+
+**Frontend:**
+- `app/components/ChatWidget.js` - Floating widget UI
+- `app/components/ChatMessage.js` - Message bubbles
+- `app/components/SuggestedQuestions.js` - Question chips
+
+**Server-side only:**
+- All LLM API calls happen server-side
+- No client-side API keys or model access
+- `runtime: 'nodejs'` and `dynamic: 'force-dynamic'`
 
 ## Next Steps (v0.003)
 

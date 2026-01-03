@@ -12,14 +12,14 @@ The ETL pipeline processes five active datasets:
 | Financial Return (Revenue/Expenses) | `financial_return_etl.py` | `financial_return.json` | Annual (as published) |
 | Council Voting Records | `council_voting_etl.py` | `council_voting.json` | Weekly (as minutes are published) |
 | Lobbyist Registry Activity | `lobbyist_registry_etl.py` | `lobbyist_activity.json` | Daily (as published) |
-| Council Decisions Summary | `publish_data_gcs.py` | `gold/council-decisions/summary.json` | Daily (derived) |
+| Council Decisions Summary | `publish_data_gcs.py` | `gold/council-decisions/summary.json`, `gold/council-decisions/{year}.json`, `gold/council-decisions/index.json`, `gold/council-decisions/trends.json` | Daily (derived) |
 | Ward Boundaries (GeoJSON) | `publish_data_gcs.py` | `ward_boundaries.geojson` | As needed |
 | ETL Run Manifest | `publish_data_gcs.py` | `metadata/etl_manifest_latest.json` | Daily (derived) |
 
 All scripts:
 - Pull data from Toronto Open Data CKAN
 - Are configured via `config.yaml`
-- Output normalized JSON to `data/processed/` (full datasets)
+- Output normalized JSON to `data/processed/` (full datasets and per-year splits)
 - Generate pre-aggregated summaries to `data/gold/` (API-ready responses)
 - Run automatically via GitHub Actions (daily at 6 AM UTC)
 
@@ -128,9 +128,14 @@ uv run --with-requirements etl/requirements.txt -- python etl/generate_gold.py
 This creates:
 - `data/gold/money-flow/{year}.json` - One file per fiscal year (~4KB each)
 - `data/gold/money-flow/index.json` - Available years + per-year URLs
+- `data/gold/money-flow/trends.json` - Cross-year totals and label breakdowns
 - `data/gold/capital/{year}.json` - One file per fiscal year (~9KB each)
 - `data/gold/capital/index.json` - Available years + per-year URLs
+- `data/gold/capital/trends.json` - Cross-year totals, ward, and category breakdowns
 - `data/gold/council-decisions/summary.json` - Rolling 365-day summary (~14KB)
+- `data/gold/council-decisions/{year}.json` - Per-year summaries (~14KB)
+- `data/gold/council-decisions/index.json` - Index of available years
+- `data/gold/council-decisions/trends.json` - Cross-year totals for motions and meetings
 
 **When to run**: After ETL scripts complete, or manually when testing API response shapes locally.
 
@@ -172,12 +177,20 @@ The pipeline runs automatically via `.github/workflows/etl-pipeline.yml`:
 
 GCS Path Structure:
 - Processed Latest: `gs://bucket/processed/latest/{capital_by_ward,financial_return,council_voting,lobbyist_activity}.json`
+- Processed Capital by Year: `gs://bucket/processed/capital-by-ward/{year}.json`
+- Processed Money Flow by Year: `gs://bucket/processed/financial-return/{year}.json`
+- Processed Council by Year: `gs://bucket/processed/council-voting/{year}.json`
+- Processed Lobbyist by Year: `gs://bucket/processed/lobbyist-registry/{year}.json`
 - Council Summary: `gs://bucket/gold/council-decisions/summary.json`
+- Council Decisions by Year: `gs://bucket/gold/council-decisions/{year}.json`
+- Council Decisions Index: `gs://bucket/gold/council-decisions/index.json`
+- Council Decisions Trends: `gs://bucket/gold/council-decisions/trends.json`
 - Ward Boundaries: `gs://bucket/ward-boundaries/ward_boundaries.geojson`
 - Gold Money Flow: `gs://bucket/gold/money-flow/{year}.json`
 - Gold Money Flow Index: `gs://bucket/gold/money-flow/index.json`
 - Gold Capital: `gs://bucket/gold/capital/{year}.json`
 - Gold Capital Index: `gs://bucket/gold/capital/index.json`
+- Gold RAG Index: `gs://bucket/gold/rag/index.json`
 - ETL Manifest (latest): `gs://bucket/metadata/etl_manifest_latest.json`
 
 Paths are extracted dynamically from the data (no hardcoded years).

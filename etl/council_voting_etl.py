@@ -203,13 +203,13 @@ def build_column_map(columns):
         elif "councillor" in col_lower or "member" in col_lower:
             col_map["councillor"] = col
 
-        # Motion description - "Agenda Item Title" or "Vote Description"
-        if "agenda item title" in col_lower:
-            col_map["motion_title"] = col
-        elif "vote description" in col_lower and "motion_title" not in col_map:
-            col_map["motion_title"] = col
+        # Agenda title + vote description
+        if "agenda item title" in col_lower or "motion title" in col_lower or "agenda title" in col_lower:
+            col_map.setdefault("agenda_item_title", col)
+        elif "vote description" in col_lower:
+            col_map.setdefault("vote_description", col)
         elif "result" in col_lower and "description" in col_lower:
-            col_map["motion_title"] = col
+            col_map.setdefault("vote_description", col)
 
         # Meeting date - "Date/Time"
         if "date/time" in col_lower or "date" in col_lower and "time" in col_lower:
@@ -218,6 +218,15 @@ def build_column_map(columns):
             col_map["meeting_date"] = col
 
     return col_map
+
+
+def clean_text(value):
+    if value is None:
+        return ""
+    text = str(value).strip()
+    if not text or text.lower() == "nan":
+        return ""
+    return text
 
 
 def filter_recent_months(df, date_col, months=6):
@@ -287,9 +296,16 @@ def run_etl(args):
 
         first_row = motion_rows.iloc[0]
 
-        motion_title = str(first_row.get(col_map.get("motion_title", ""), "")).strip()
-        if not motion_title or motion_title == "nan":
-            motion_title = f"Motion {motion_id}"
+        agenda_title = ""
+        vote_description = ""
+        agenda_col = col_map.get("agenda_item_title")
+        vote_desc_col = col_map.get("vote_description")
+        if agenda_col:
+            agenda_title = clean_text(first_row.get(agenda_col))
+        if vote_desc_col:
+            vote_description = clean_text(first_row.get(vote_desc_col))
+
+        motion_title = agenda_title or vote_description or f"Motion {motion_id}"
 
         meeting_date = None
         if "meeting_date" in col_map:
@@ -311,6 +327,8 @@ def run_etl(args):
             "meeting_date": meeting_date,
             "motion_id": motion_data["motion_id"],
             "motion_title": motion_title,
+            "agenda_item_title": agenda_title,
+            "vote_description": vote_description,
             "motion_category": motion_category,
             "vote_outcome": vote_outcome,
             "yes_votes": motion_data["yes_votes"],

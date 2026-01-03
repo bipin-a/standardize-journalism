@@ -1,7 +1,7 @@
 import { readFile } from 'fs/promises'
 import { join } from 'path'
 import { loadJsonData } from '../_lib/load-json'
-import { getCouncilSummaryUrl, getVotingDataUrl, getLobbyistDataUrl } from '../_lib/gcs-urls'
+import { getCouncilSummaryUrl, getVotingDataUrl, getLobbyistDataUrl, getGcsBaseUrl } from '../_lib/gcs-urls'
 
 export const revalidate = 3600
 
@@ -34,6 +34,46 @@ const loadCouncilSummary = async () => {
   return loadLocalJson(COUNCIL_SUMMARY_GOLD_PATH)
 }
 
+const loadCouncilYearSummary = async (year) => {
+  if (!Number.isFinite(year)) return null
+
+  const baseUrl = getGcsBaseUrl()
+  const yearUrl = `${baseUrl}/gold/council-decisions/${year}.json`
+
+  try {
+    return await fetchJson(yearUrl)
+  } catch (error) {
+    console.warn(`Council year summary fetch failed for ${year}, trying local file:`, error.message)
+  }
+
+  try {
+    return await loadLocalJson(`data/gold/council-decisions/${year}.json`)
+  } catch (error) {
+    console.warn(`Local council year summary missing for ${year}:`, error.message)
+  }
+
+  return null
+}
+
+const filterRecordsByYear = (records, dateFields, year) => {
+  const yearRecords = []
+  for (const record of records) {
+    let recordYear = null
+    for (const field of dateFields) {
+      if (!record[field]) continue
+      const parsed = new Date(record[field])
+      if (!Number.isNaN(parsed.valueOf())) {
+        recordYear = parsed.getFullYear()
+        break
+      }
+    }
+    if (recordYear === year) {
+      yearRecords.push(record)
+    }
+  }
+  return yearRecords
+}
+
 const loadVotingData = async () => {
   return loadJsonData({
     url: getVotingDataUrl(),
@@ -50,6 +90,18 @@ const loadLobbyistData = async () => {
     revalidateSeconds: revalidate,
     cacheMode: 'no-store'
   })
+}
+
+const countUniqueMeetings = (motions) => {
+  const dates = new Set()
+  for (const motion of motions) {
+    if (!motion.meeting_date) continue
+    const dateText = String(motion.meeting_date).slice(0, 10)
+    if (dateText.length === 10) {
+      dates.add(dateText)
+    }
+  }
+  return dates.size
 }
 
 const getCategoryLabel = (category) => {
@@ -179,6 +231,17 @@ const aggregateLobbyingSummary = (lobbyingRecords) => {
 
 export async function GET(request) {
   try {
+    const { searchParams } = new URL(request.url)
+    const requestedYear = Number.parseInt(searchParams.get('year'), 10)
+    const year = Number.isFinite(requestedYear) ? requestedYear : 2024
+
+    if (Number.isFinite(requestedYear)) {
+      const yearSummary = await loadCouncilYearSummary(year)
+      if (yearSummary && yearSummary.recent_decisions) {
+        return Response.json(yearSummary)
+      }
+    }
+
     try {
       const summary = await loadCouncilSummary()
       if (summary && summary.recent_decisions) {
@@ -188,10 +251,6 @@ export async function GET(request) {
       console.warn('Council summary unavailable, falling back to raw data:', summaryError.message)
     }
 
-    const { searchParams } = new URL(request.url)
-    const requestedYear = Number.parseInt(searchParams.get('year'), 10)
-    const year = Number.isFinite(requestedYear) ? requestedYear : 2024
-
     const recentDays = Number.parseInt(searchParams.get('recent'), 10)
     const recent = Number.isFinite(recentDays) ? recentDays : 365
 
@@ -199,18 +258,26 @@ export async function GET(request) {
     const votingData = await loadVotingData()
     const lobbyingData = await loadLobbyistData()
 
-    // Filter voting data to recent days
-    const cutoffDate = new Date()
-    cutoffDate.setDate(cutoffDate.getDate() - recent)
+    let filteredVoting = votingData
+    let filteredLobbying = lobbyingData
 
-    const recentVoting = votingData.filter(motion => {
-      if (!motion.meeting_date) return false
-      const motionDate = new Date(motion.meeting_date)
-      return motionDate >= cutoffDate
-    })
+    if (Number.isFinite(requestedYear)) {
+      filteredVoting = filterRecordsByYear(votingData, ['meeting_date'], year)
+      filteredLobbying = filterRecordsByYear(lobbyingData, ['communication_date', 'registration_date'], year)
+    } else {
+      // Filter voting data to recent days
+      const cutoffDate = new Date()
+      cutoffDate.setDate(cutoffDate.getDate() - recent)
+
+      filteredVoting = votingData.filter(motion => {
+        if (!motion.meeting_date) return false
+        const motionDate = new Date(motion.meeting_date)
+        return motionDate >= cutoffDate
+      })
+    }
 
     // Prepare recent decisions (simplified for display)
-    const recentDecisions = recentVoting.slice(0, 20).map(motion => ({
+    const recentDecisions = filteredVoting.slice(0, 20).map(motion => ({
       meeting_date: motion.meeting_date,
       motion_id: motion.motion_id,
       motion_title: motion.motion_title,
@@ -225,13 +292,14 @@ export async function GET(request) {
     }))
 
     // Aggregate decision categories
-    const decisionCategories = aggregateDecisionCategories(recentVoting)
+    const decisionCategories = aggregateDecisionCategories(filteredVoting)
 
     // Aggregate councillor voting patterns
-    const councillorVoting = aggregateCouncillorVoting(recentVoting)
+    const councillorVoting = aggregateCouncillorVoting(filteredVoting)
 
     // Aggregate lobbying summary
-    const lobbying = aggregateLobbyingSummary(lobbyingData)
+    const lobbying = aggregateLobbyingSummary(filteredLobbying)
+    const meetingCount = countUniqueMeetings(filteredVoting)
 
     return Response.json({
       recent_decisions: recentDecisions,
@@ -241,12 +309,13 @@ export async function GET(request) {
       metadata: {
         year,
         recent_days: recent,
-        total_motions: recentVoting.length,
-        motions_passed: recentVoting.filter(m => m.vote_outcome === 'passed').length,
-        motions_failed: recentVoting.filter(m => m.vote_outcome === 'failed').length,
-        pass_rate: recentVoting.length > 0
-          ? ((recentVoting.filter(m => m.vote_outcome === 'passed').length / recentVoting.length) * 100).toFixed(1)
-          : 0
+        total_motions: filteredVoting.length,
+        motions_passed: filteredVoting.filter(m => m.vote_outcome === 'passed').length,
+        motions_failed: filteredVoting.filter(m => m.vote_outcome === 'failed').length,
+        pass_rate: filteredVoting.length > 0
+          ? ((filteredVoting.filter(m => m.vote_outcome === 'passed').length / filteredVoting.length) * 100).toFixed(1)
+          : 0,
+        meeting_count: meetingCount
       },
       timestamp: new Date().toISOString()
     })

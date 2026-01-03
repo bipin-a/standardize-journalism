@@ -11,6 +11,7 @@ from pathlib import Path
 import requests
 
 from config_loader import get_gcs_path, load_config
+from generate_embeddings import generate_gold_embeddings
 
 
 def require_cmd(command):
@@ -68,6 +69,23 @@ def parse_year(value):
     if year < 1900 or year > 2100:
         return None
     return year
+
+
+def normalize_meeting_date(value):
+    if value is None:
+        return None
+    text = str(value).strip()
+    if len(text) >= 10 and text[4] == "-" and text[7] == "-":
+        return text[:10]
+    return None
+
+
+def count_unique_meetings(motions):
+    meeting_dates = {
+        normalize_meeting_date(motion.get("meeting_date"))
+        for motion in motions
+    }
+    return len({date for date in meeting_dates if date})
 
 
 def load_json_list(json_path, label):
@@ -188,6 +206,104 @@ def build_gold_index(years, base_url):
         "availableYears": years,
         "latestYear": years[-1],
         "files": {str(year): f"{base_url}/{year}.json" for year in years},
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+def build_money_flow_trends(records, years):
+    totals_by_year = {str(year): 0 for year in years}
+    flows = {}
+
+    for flow_type in ("revenue", "expenditure"):
+        flow_totals = totals_by_year.copy()
+        labels = {}
+
+        for record in records:
+            if record.get("flow_type") != flow_type:
+                continue
+
+            year = record.get("fiscal_year")
+            if year is None:
+                continue
+
+            label = record.get("label") or record.get("line_description")
+            if not label:
+                continue
+
+            try:
+                amount = float(record.get("amount", 0))
+            except (TypeError, ValueError):
+                continue
+
+            year_key = str(year)
+            flow_totals[year_key] = flow_totals.get(year_key, 0) + amount
+
+            label_entry = labels.setdefault(label, {})
+            label_entry[year_key] = label_entry.get(year_key, 0) + amount
+
+        flows[flow_type] = {
+            "totalByYear": flow_totals,
+            "byLabel": labels
+        }
+
+    return {
+        "years": years,
+        "latestYear": years[-1] if years else None,
+        "flows": flows,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
+def build_capital_trends(records, years):
+    total_by_year = {str(year): 0 for year in years}
+    wards = {}
+    categories = {}
+
+    for record in records:
+        year = record.get("fiscal_year")
+        if year is None:
+            continue
+
+        try:
+            amount = float(record.get("amount", 0))
+        except (TypeError, ValueError):
+            continue
+
+        year_key = str(year)
+        total_by_year[year_key] = total_by_year.get(year_key, 0) + amount
+
+        ward_number = record.get("ward_number")
+        ward_name = record.get("ward_name")
+        if ward_number is not None and ward_name:
+            ward_key = f"{ward_number}|{ward_name}"
+            ward_entry = wards.setdefault(ward_key, {
+                "ward_number": ward_number,
+                "ward_name": ward_name,
+                "total": 0,
+                "byYear": {}
+            })
+            ward_entry["total"] += amount
+            ward_entry["byYear"][year_key] = ward_entry["byYear"].get(year_key, 0) + amount
+
+        category = record.get("category")
+        if category:
+            category_entry = categories.setdefault(category, {
+                "name": category,
+                "total": 0,
+                "byYear": {}
+            })
+            category_entry["total"] += amount
+            category_entry["byYear"][year_key] = category_entry["byYear"].get(year_key, 0) + amount
+
+    ward_list = sorted(wards.values(), key=lambda item: item["total"], reverse=True)
+    category_list = sorted(categories.values(), key=lambda item: item["total"], reverse=True)
+
+    return {
+        "years": years,
+        "latestYear": years[-1] if years else None,
+        "totalByYear": total_by_year,
+        "wards": ward_list,
+        "categories": category_list,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
@@ -529,6 +645,7 @@ def build_council_summary(motions, lobbyist_records, recent_days=365):
     passed_count = sum(1 for motion in recent_motions if motion.get("vote_outcome") == "passed")
     failed_count = sum(1 for motion in recent_motions if motion.get("vote_outcome") == "failed")
     pass_rate = (passed_count / len(recent_motions) * 100) if recent_motions else 0
+    meeting_count = count_unique_meetings(recent_motions)
 
     latest_year = None
     for motion in recent_motions:
@@ -548,7 +665,161 @@ def build_council_summary(motions, lobbyist_records, recent_days=365):
             "motions_passed": passed_count,
             "motions_failed": failed_count,
             "pass_rate": f"{pass_rate:.1f}",
+            "meeting_count": meeting_count,
         },
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def filter_records_by_year(records, date_fields, year):
+    year_records = []
+    for record in records:
+        record_year = None
+        for field in date_fields:
+            record_year = parse_year(record.get(field))
+            if record_year:
+                break
+        if record_year == year:
+            year_records.append(record)
+    return year_records
+
+
+def build_council_summary_for_year(motions, lobbyist_records, year):
+    year_motions = filter_records_by_year(motions, ["meeting_date"], year)
+    year_motions.sort(key=lambda item: item.get("meeting_date") or "", reverse=True)
+
+    recent_decisions = []
+    for motion in year_motions[:20]:
+        yes_votes = motion.get("yes_votes", 0) or 0
+        no_votes = motion.get("no_votes", 0) or 0
+        absent_votes = motion.get("absent_votes", 0) or 0
+        total_votes = yes_votes + no_votes
+        margin = (yes_votes / total_votes * 100) if total_votes else 0
+        recent_decisions.append({
+            "meeting_date": motion.get("meeting_date"),
+            "motion_id": motion.get("motion_id"),
+            "motion_title": motion.get("motion_title"),
+            "motion_category": motion.get("motion_category"),
+            "vote_outcome": motion.get("vote_outcome"),
+            "yes_votes": yes_votes,
+            "no_votes": no_votes,
+            "absent_votes": absent_votes,
+            "vote_margin_percent": f"{margin:.1f}",
+        })
+
+    decision_categories = aggregate_decision_categories(year_motions)
+    councillor_voting = aggregate_councillor_voting(year_motions)[:25]
+    lobbying_year = filter_records_by_year(
+        lobbyist_records, ["communication_date", "registration_date"], year
+    )
+    lobbying_summary = aggregate_lobbying_summary(lobbying_year)
+
+    passed_count = sum(1 for motion in year_motions if motion.get("vote_outcome") == "passed")
+    failed_count = sum(1 for motion in year_motions if motion.get("vote_outcome") == "failed")
+    pass_rate = (passed_count / len(year_motions) * 100) if year_motions else 0
+    meeting_count = count_unique_meetings(year_motions)
+
+    return {
+        "recent_decisions": recent_decisions,
+        "decision_categories": decision_categories,
+        "councillor_voting_patterns": councillor_voting,
+        "lobbying_summary": lobbying_summary,
+        "metadata": {
+            "year": year,
+            "total_motions": len(year_motions),
+            "motions_passed": passed_count,
+            "motions_failed": failed_count,
+            "pass_rate": f"{pass_rate:.1f}",
+            "meeting_count": meeting_count,
+            "period_start": f"{year}-01-01",
+            "period_end": f"{year}-12-31",
+        },
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def build_council_trends(motions, years):
+    by_year = {}
+
+    for year in years:
+        year_motions = filter_records_by_year(motions, ["meeting_date"], year)
+        passed_count = sum(1 for motion in year_motions if motion.get("vote_outcome") == "passed")
+        failed_count = sum(1 for motion in year_motions if motion.get("vote_outcome") == "failed")
+        total_motions = len(year_motions)
+        pass_rate = (passed_count / total_motions * 100) if total_motions else 0
+        meeting_count = count_unique_meetings(year_motions)
+
+        by_year[str(year)] = {
+            "total_motions": total_motions,
+            "motions_passed": passed_count,
+            "motions_failed": failed_count,
+            "pass_rate": f"{pass_rate:.1f}",
+            "meeting_count": meeting_count,
+        }
+
+    return {
+        "availableYears": years,
+        "latestYear": years[-1] if years else None,
+        "byYear": by_year,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def build_lobbyist_trends(records, years):
+    activity_by_year = {}
+    registrations_by_year = {}
+    registrations_seen = {}
+    year_set = set(years)
+
+    def register_year(year):
+        if year is None:
+            return None
+        year_set.add(year)
+        key = str(year)
+        activity_by_year.setdefault(key, 0)
+        registrations_by_year.setdefault(key, 0)
+        registrations_seen.setdefault(key, set())
+        return key
+
+    def registration_key(record):
+        sm_number = record.get("sm_number")
+        if sm_number:
+            return f"sm:{sm_number}"
+        lobbyist = (record.get("lobbyist_name") or "").strip()
+        client = (record.get("client_name") or "").strip()
+        reg_date = (record.get("registration_date") or "").strip()
+        if lobbyist or client or reg_date:
+            return f"fallback:{lobbyist}|{client}|{reg_date}"
+        return None
+
+    for record in records:
+        comm_year = parse_year(record.get("communication_date"))
+        if comm_year:
+            comm_key = register_year(comm_year)
+            activity_by_year[comm_key] += 1
+
+        reg_year = parse_year(record.get("registration_date"))
+        if reg_year:
+            reg_key = register_year(reg_year)
+            key = registration_key(record)
+            if key:
+                if key not in registrations_seen[reg_key]:
+                    registrations_seen[reg_key].add(key)
+                    registrations_by_year[reg_key] = len(registrations_seen[reg_key])
+            else:
+                registrations_by_year[reg_key] += 1
+
+    available_years = sorted(year_set)
+    for year in available_years:
+        key = str(year)
+        activity_by_year.setdefault(key, 0)
+        registrations_by_year.setdefault(key, 0)
+
+    return {
+        "availableYears": available_years,
+        "latestYear": available_years[-1] if available_years else None,
+        "activityByYear": activity_by_year,
+        "registrationsByYear": registrations_by_year,
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -668,6 +939,65 @@ def main():
     # Get available years for each dataset
     financial_years = sorted({int(r["fiscal_year"]) for r in financial_records if "fiscal_year" in r})
     capital_years = sorted({int(r["fiscal_year"]) for r in capital_records if "fiscal_year" in r})
+    council_years = sorted({
+        year for year in (parse_year(motion.get("meeting_date")) for motion in council_records) if year
+    })
+    lobbyist_years = sorted({
+        year for year in (
+            parse_year(record.get("communication_date")) or parse_year(record.get("registration_date"))
+            for record in lobbyist_records
+        )
+        if year
+    })
+
+    financial_processed_year_dir = processed_dir / "financial-return"
+    financial_processed_year_dir.mkdir(parents=True, exist_ok=True)
+    financial_processed_files = []
+    for year in financial_years:
+        year_records = [r for r in financial_records if r.get("fiscal_year") == year]
+        year_path = financial_processed_year_dir / f"{year}.json"
+        with open(year_path, "w", encoding="utf-8") as handle:
+            json.dump(year_records, handle, indent=2)
+        financial_processed_files.append({"year": year, "path": year_path})
+
+    capital_processed_year_dir = processed_dir / "capital-by-ward"
+    capital_processed_year_dir.mkdir(parents=True, exist_ok=True)
+    capital_processed_files = []
+    for year in capital_years:
+        year_records = [r for r in capital_records if r.get("fiscal_year") == year]
+        year_path = capital_processed_year_dir / f"{year}.json"
+        with open(year_path, "w", encoding="utf-8") as handle:
+            json.dump(year_records, handle, indent=2)
+        capital_processed_files.append({"year": year, "path": year_path})
+
+    council_processed_year_dir = processed_dir / "council-voting"
+    council_processed_year_dir.mkdir(parents=True, exist_ok=True)
+    council_processed_files = []
+
+    for year in council_years:
+        year_records = filter_records_by_year(council_records, ["meeting_date"], year)
+        year_records.sort(key=lambda item: item.get("meeting_date") or "", reverse=True)
+        year_path = council_processed_year_dir / f"{year}.json"
+        with open(year_path, "w", encoding="utf-8") as handle:
+            json.dump(year_records, handle, indent=2)
+        council_processed_files.append({"year": year, "path": year_path})
+
+    lobbyist_processed_year_dir = processed_dir / "lobbyist-registry"
+    lobbyist_processed_year_dir.mkdir(parents=True, exist_ok=True)
+    lobbyist_processed_files = []
+
+    for year in lobbyist_years:
+        year_records = filter_records_by_year(
+            lobbyist_records, ["communication_date", "registration_date"], year
+        )
+        year_records.sort(
+            key=lambda item: item.get("communication_date") or item.get("registration_date") or "",
+            reverse=True,
+        )
+        year_path = lobbyist_processed_year_dir / f"{year}.json"
+        with open(year_path, "w", encoding="utf-8") as handle:
+            json.dump(year_records, handle, indent=2)
+        lobbyist_processed_files.append({"year": year, "path": year_path})
 
     # Generate money-flow gold files (one per year)
     money_flow_gold_dir = gold_dir / "money-flow"
@@ -686,6 +1016,11 @@ def main():
     with open(money_flow_index_path, "w", encoding="utf-8") as f:
         json.dump(money_flow_index, f, indent=2)
 
+    money_flow_trends_path = money_flow_gold_dir / "trends.json"
+    money_flow_trends = build_money_flow_trends(financial_records, financial_years)
+    with open(money_flow_trends_path, "w", encoding="utf-8") as f:
+        json.dump(money_flow_trends, f, indent=2)
+
     # Generate capital gold files (one per year)
     capital_gold_dir = gold_dir / "capital"
     capital_gold_dir.mkdir(parents=True, exist_ok=True)
@@ -703,12 +1038,54 @@ def main():
     with open(capital_index_path, "w", encoding="utf-8") as f:
         json.dump(capital_index, f, indent=2)
 
+    capital_trends_path = capital_gold_dir / "trends.json"
+    capital_trends = build_capital_trends(capital_records, capital_years)
+    with open(capital_trends_path, "w", encoding="utf-8") as f:
+        json.dump(capital_trends, f, indent=2)
+
     # Move council summary to gold directory (already generated above)
     council_gold_dir = gold_dir / "council-decisions"
     council_gold_dir.mkdir(parents=True, exist_ok=True)
     council_gold_path = council_gold_dir / "summary.json"
     shutil.copy(council_summary_path, council_gold_path)
     print(f"  Copied council summary to gold directory")
+
+    council_gold_files = []
+    for year in council_years:
+        summary = build_council_summary_for_year(council_records, lobbyist_records, year)
+        gold_path = council_gold_dir / f"{year}.json"
+        with open(gold_path, "w", encoding="utf-8") as handle:
+            json.dump(summary, handle, indent=2)
+        council_gold_files.append({"year": year, "path": gold_path})
+
+    council_index_path = council_gold_dir / "index.json"
+    council_index = build_gold_index(
+        council_years,
+        f"https://storage.googleapis.com/{bucket_name}/gold/council-decisions"
+    )
+    with open(council_index_path, "w", encoding="utf-8") as handle:
+        json.dump(council_index, handle, indent=2)
+
+    council_trends_path = council_gold_dir / "trends.json"
+    council_trends = build_council_trends(council_records, council_years)
+    with open(council_trends_path, "w", encoding="utf-8") as handle:
+        json.dump(council_trends, handle, indent=2)
+
+    # Build lobbyist trends (counts by year)
+    lobbyist_gold_dir = gold_dir / "lobbyist-registry"
+    lobbyist_gold_dir.mkdir(parents=True, exist_ok=True)
+    lobbyist_trends_path = lobbyist_gold_dir / "trends.json"
+    lobbyist_trends = build_lobbyist_trends(lobbyist_records, lobbyist_years)
+    with open(lobbyist_trends_path, "w", encoding="utf-8") as handle:
+        json.dump(lobbyist_trends, handle, indent=2)
+
+    rag_index_path = None
+    try:
+        print("Generating RAG embeddings...")
+        rag_index_path = generate_gold_embeddings(gold_dir, output_path=gold_dir / "rag" / "index.json")
+        print(f"  Wrote RAG index: {rag_index_path}")
+    except RuntimeError as error:
+        print(f"  Skipping RAG embeddings: {error}")
 
     council_summary_dest = get_gcs_path("council_summary", {})
     ward_geojson_dest = get_gcs_path("ward_geojson", {})
@@ -774,6 +1151,14 @@ def main():
                 "record_count": len(capital_records),
                 "year_start": capital_start,
                 "year_end": capital_end,
+                "by_year": [
+                    {
+                        "year": entry["year"],
+                        **file_stats(entry["path"]),
+                        "gcs_path": f"gs://{bucket_name}/processed/capital-by-ward/{entry['year']}.json",
+                    }
+                    for entry in capital_processed_files
+                ],
             },
             "financial_return": {
                 **file_stats(financial_path),
@@ -781,6 +1166,14 @@ def main():
                 "record_count": len(financial_records),
                 "year_start": financial_start,
                 "year_end": financial_end,
+                "by_year": [
+                    {
+                        "year": entry["year"],
+                        **file_stats(entry["path"]),
+                        "gcs_path": f"gs://{bucket_name}/processed/financial-return/{entry['year']}.json",
+                    }
+                    for entry in financial_processed_files
+                ],
             },
             "council_voting": {
                 **file_stats(council_path),
@@ -788,6 +1181,14 @@ def main():
                 "record_count": len(council_records),
                 "year_start": council_start,
                 "year_end": council_end,
+                "by_year": [
+                    {
+                        "year": entry["year"],
+                        **file_stats(entry["path"]),
+                        "gcs_path": f"gs://{bucket_name}/processed/council-voting/{entry['year']}.json",
+                    }
+                    for entry in council_processed_files
+                ],
             },
             "lobbyist_registry": {
                 **file_stats(lobbyist_path),
@@ -795,6 +1196,14 @@ def main():
                 "record_count": len(lobbyist_records),
                 "year_start": lobbyist_start,
                 "year_end": lobbyist_end,
+                "by_year": [
+                    {
+                        "year": entry["year"],
+                        **file_stats(entry["path"]),
+                        "gcs_path": f"gs://{bucket_name}/processed/lobbyist-registry/{entry['year']}.json",
+                    }
+                    for entry in lobbyist_processed_files
+                ],
             },
             "ward_geojson": {
                 **file_stats(ward_geojson_path),
@@ -808,6 +1217,10 @@ def main():
                     **file_stats(money_flow_index_path),
                     "gcs_path": f"gs://{bucket_name}/gold/money-flow/index.json",
                 },
+                "trends": {
+                    **file_stats(money_flow_trends_path),
+                    "gcs_path": f"gs://{bucket_name}/gold/money-flow/trends.json",
+                },
                 "years": financial_years,
             },
             "capital": {
@@ -815,14 +1228,42 @@ def main():
                     **file_stats(capital_index_path),
                     "gcs_path": f"gs://{bucket_name}/gold/capital/index.json",
                 },
+                "trends": {
+                    **file_stats(capital_trends_path),
+                    "gcs_path": f"gs://{bucket_name}/gold/capital/trends.json",
+                },
                 "years": capital_years,
             },
             "council_decisions": {
-                **file_stats(council_gold_path),
-                "gcs_path": council_summary_dest,
+                "summary": {
+                    **file_stats(council_gold_path),
+                    "gcs_path": council_summary_dest,
+                },
+                "index": {
+                    **file_stats(council_index_path),
+                    "gcs_path": f"gs://{bucket_name}/gold/council-decisions/index.json",
+                },
+                "trends": {
+                    **file_stats(council_trends_path),
+                    "gcs_path": f"gs://{bucket_name}/gold/council-decisions/trends.json",
+                },
+                "years": council_years,
+            },
+            "lobbyist_registry": {
+                "trends": {
+                    **file_stats(lobbyist_trends_path),
+                    "gcs_path": f"gs://{bucket_name}/gold/lobbyist-registry/trends.json",
+                },
+                "years": lobbyist_years,
             },
         },
     }
+
+    if rag_index_path and Path(rag_index_path).exists():
+        manifest["gold"]["rag_index"] = {
+            **file_stats(Path(rag_index_path)),
+            "gcs_path": f"gs://{bucket_name}/gold/rag/index.json",
+        }
 
     manifest_path = metadata_dir / f"etl_manifest_{run_id}.json"
     manifest_latest_path = metadata_dir / "etl_manifest_latest.json"
@@ -872,6 +1313,42 @@ def main():
     run_cmd(council_latest_cmd)
     run_cmd(lobbyist_latest_cmd)
 
+    # Upload financial return processed files by year
+    for entry in financial_processed_files:
+        dest = f"gs://{bucket_name}/processed/financial-return/{entry['year']}.json"
+        cmd = ["gcloud", "--project", project_id, "storage", "cp", str(entry["path"]), dest]
+        if cache_control:
+            cmd.extend(["--cache-control", cache_control])
+        run_cmd(cmd)
+        print(f"  Uploaded {dest}")
+
+    # Upload capital by ward processed files by year
+    for entry in capital_processed_files:
+        dest = f"gs://{bucket_name}/processed/capital-by-ward/{entry['year']}.json"
+        cmd = ["gcloud", "--project", project_id, "storage", "cp", str(entry["path"]), dest]
+        if cache_control:
+            cmd.extend(["--cache-control", cache_control])
+        run_cmd(cmd)
+        print(f"  Uploaded {dest}")
+
+    # Upload council voting processed files by year
+    for entry in council_processed_files:
+        dest = f"gs://{bucket_name}/processed/council-voting/{entry['year']}.json"
+        cmd = ["gcloud", "--project", project_id, "storage", "cp", str(entry["path"]), dest]
+        if cache_control:
+            cmd.extend(["--cache-control", cache_control])
+        run_cmd(cmd)
+        print(f"  Uploaded {dest}")
+
+    # Upload lobbyist registry processed files by year
+    for entry in lobbyist_processed_files:
+        dest = f"gs://{bucket_name}/processed/lobbyist-registry/{entry['year']}.json"
+        cmd = ["gcloud", "--project", project_id, "storage", "cp", str(entry["path"]), dest]
+        if cache_control:
+            cmd.extend(["--cache-control", cache_control])
+        run_cmd(cmd)
+        print(f"  Uploaded {dest}")
+
     # Upload gold summaries to GCS
     print("Uploading gold summaries to GCS...")
 
@@ -890,6 +1367,15 @@ def main():
     if money_flow_index_path.exists():
         dest = f"gs://{bucket_name}/gold/money-flow/index.json"
         cmd = ["gcloud", "--project", project_id, "storage", "cp", str(money_flow_index_path), dest]
+        if cache_control:
+            cmd.extend(["--cache-control", cache_control])
+        run_cmd(cmd)
+        print(f"  Uploaded {dest}")
+
+    # Upload money-flow trends
+    if money_flow_trends_path.exists():
+        dest = f"gs://{bucket_name}/gold/money-flow/trends.json"
+        cmd = ["gcloud", "--project", project_id, "storage", "cp", str(money_flow_trends_path), dest]
         if cache_control:
             cmd.extend(["--cache-control", cache_control])
         run_cmd(cmd)
@@ -915,6 +1401,51 @@ def main():
         run_cmd(cmd)
         print(f"  Uploaded {dest}")
 
+    # Upload capital trends
+    if capital_trends_path.exists():
+        dest = f"gs://{bucket_name}/gold/capital/trends.json"
+        cmd = ["gcloud", "--project", project_id, "storage", "cp", str(capital_trends_path), dest]
+        if cache_control:
+            cmd.extend(["--cache-control", cache_control])
+        run_cmd(cmd)
+        print(f"  Uploaded {dest}")
+
+    # Upload council gold files by year
+    for entry in council_gold_files:
+        dest = f"gs://{bucket_name}/gold/council-decisions/{entry['year']}.json"
+        cmd = ["gcloud", "--project", project_id, "storage", "cp", str(entry["path"]), dest]
+        if cache_control:
+            cmd.extend(["--cache-control", cache_control])
+        run_cmd(cmd)
+        print(f"  Uploaded {dest}")
+
+    # Upload council gold index
+    if council_index_path.exists():
+        dest = f"gs://{bucket_name}/gold/council-decisions/index.json"
+        cmd = ["gcloud", "--project", project_id, "storage", "cp", str(council_index_path), dest]
+        if cache_control:
+            cmd.extend(["--cache-control", cache_control])
+        run_cmd(cmd)
+        print(f"  Uploaded {dest}")
+
+    # Upload council trends
+    if council_trends_path.exists():
+        dest = f"gs://{bucket_name}/gold/council-decisions/trends.json"
+        cmd = ["gcloud", "--project", project_id, "storage", "cp", str(council_trends_path), dest]
+        if cache_control:
+            cmd.extend(["--cache-control", cache_control])
+        run_cmd(cmd)
+        print(f"  Uploaded {dest}")
+
+    # Upload lobbyist trends
+    if lobbyist_trends_path.exists():
+        dest = f"gs://{bucket_name}/gold/lobbyist-registry/trends.json"
+        cmd = ["gcloud", "--project", project_id, "storage", "cp", str(lobbyist_trends_path), dest]
+        if cache_control:
+            cmd.extend(["--cache-control", cache_control])
+        run_cmd(cmd)
+        print(f"  Uploaded {dest}")
+
     # Upload council summary gold file
     if council_gold_path.exists():
         cmd = ["gcloud", "--project", project_id, "storage", "cp", str(council_gold_path), council_summary_dest]
@@ -922,6 +1453,15 @@ def main():
             cmd.extend(["--cache-control", cache_control])
         run_cmd(cmd)
         print(f"  Uploaded {council_summary_dest}")
+
+    # Upload RAG embeddings index
+    if rag_index_path and Path(rag_index_path).exists():
+        dest = f"gs://{bucket_name}/gold/rag/index.json"
+        cmd = ["gcloud", "--project", project_id, "storage", "cp", str(rag_index_path), dest]
+        if cache_control:
+            cmd.extend(["--cache-control", cache_control])
+        run_cmd(cmd)
+        print(f"  Uploaded {dest}")
 
     # Upload ETL run manifest (historical + latest)
     manifest_dest = f"gs://{bucket_name}/metadata/etl_manifest_{run_id}.json"

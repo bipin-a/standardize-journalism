@@ -13,7 +13,13 @@
       "Bash(python etl/capital_by_ward_etl.py:*)",
       "Bash(ls:*)",
       "Bash(mkdir:*)",
-      "Bash(uv run:*)"
+      "Bash(uv run:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "WebFetch(domain:toronto-mcp.s-a62.workers.dev)",
+      "WebFetch(domain:open.toronto.ca)",
+      "WebFetch(domain:app.toronto.ca)",
+      "WebFetch(domain:secure.toronto.ca)"
     ]
   }
 }

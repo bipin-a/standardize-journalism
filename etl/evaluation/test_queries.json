@@ -1,0 +1,132 @@
+[
+  {
+    "query": "What did Toronto spend in 2024?",
+    "expectedType": "overview",
+    "expectedRetrieval": "tool",
+    "expectedTool": "sum_amount",
+    "expectedResponseType": "metric_sum",
+    "expectedToolDataset": "money-flow",
+    "expectedToolRouting": "llm"
+  },
+  {
+    "query": "Show me transit projects in Ward 10",
+    "expectedType": "detail",
+    "expectedRetrieval": "rag",
+    "expectedRagStrategy": "filters",
+    "expectedEntities": {
+      "ward": 10,
+      "category": "transit"
+    }
+  },
+  {
+    "query": "How much did Ward 5 get for parks?",
+    "expectedType": "detail",
+    "expectedRetrieval": "tool",
+    "expectedTool": "sum_amount",
+    "expectedResponseType": "metric_sum",
+    "expectedToolDataset": "capital",
+    "expectedToolRouting": "llm"
+  },
+  {
+    "query": "What's the council pass rate?",
+    "expectedType": "overview",
+    "expectedRetrieval": "tool",
+    "expectedTool": "council_metrics",
+    "expectedResponseType": "council_metrics",
+    "expectedToolDataset": "council",
+    "expectedToolRouting": "llm"
+  },
+  {
+    "query": "How many council meetings in 2024?",
+    "expectedRetrieval": "tool",
+    "expectedTool": "count_records",
+    "expectedResponseType": "metric_count",
+    "expectedToolDataset": "council",
+    "expectedToolRouting": "llm"
+  },
+  {
+    "query": "Total capital spending in Ward 10 in 2024",
+    "expectedRetrieval": "tool",
+    "expectedTool": "sum_amount",
+    "expectedResponseType": "metric_sum",
+    "expectedToolDataset": "capital",
+    "expectedToolRouting": "llm"
+  },
+  {
+    "query": "Compare capital spending 2023 vs 2024",
+    "expectedRetrieval": "tool",
+    "expectedTool": "compare_years",
+    "expectedResponseType": "metric_compare",
+    "expectedToolDataset": "capital",
+    "expectedToolRouting": "llm"
+  },
+  {
+    "query": "Top 5 wards by capital spending in 2024",
+    "expectedRetrieval": "tool",
+    "expectedTool": "top_k",
+    "expectedResponseType": "metric_rank",
+    "expectedToolDataset": "capital",
+    "expectedToolRouting": "llm"
+  },
+  {
+    "query": "Procurement totals in 2024",
+    "expectedRetrieval": "tool",
+    "expectedTool": "procurement_metrics",
+    "expectedResponseType": "procurement_metrics",
+    "expectedToolDataset": "procurement",
+    "expectedToolRouting": "llm"
+  },
+  {
+    "query": "Details for motion 2024.CC25.1",
+    "expectedRetrieval": "tool",
+    "expectedTool": "get_motion_details",
+    "expectedResponseType": "motion_detail",
+    "expectedToolDataset": "council",
+    "expectedToolRouting": "llm"
+  },
+  {
+    "query": "What was Toronto's biggest expense in 2024?",
+    "expectedRetrieval": "tool",
+    "expectedTool": "top_k",
+    "expectedResponseType": "metric_rank",
+    "expectedToolDataset": "money-flow",
+    "expectedToolRouting": "llm"
+  },
+  {
+    "query": "Which ward got the most capital funding?",
+    "expectedRetrieval": "tool",
+    "expectedTool": "top_k",
+    "expectedResponseType": "metric_rank",
+    "expectedToolDataset": "capital",
+    "expectedToolRouting": "llm"
+  },
+  {
+    "query": "How much did the city spend on transit?",
+    "expectedRetrieval": "tool",
+    "expectedTool": "sum_amount",
+    "expectedResponseType": "metric_sum",
+    "expectedToolDataset": "money-flow",
+    "expectedToolRouting": "llm"
+  },
+  {
+    "query": "What was the budget surplus or deficit?",
+    "expectedRetrieval": "tool",
+    "expectedTool": "budget_balance",
+    "expectedResponseType": "budget_balance",
+    "expectedToolDataset": "money-flow",
+    "expectedToolRouting": "llm"
+  },
+  {
+    "query": "What decisions did council make recently?",
+    "expectedRetrieval": "rag",
+    "expectedRagStrategy": "filters"
+  },
+  {
+    "query": "How much was spent on police?",
+    "expectedRetrieval": "tool",
+    "expectedTool": "sum_amount",
+    "expectedResponseType": "metric_sum",
+    "expectedToolDataset": "money-flow",
+    "expectedToolRouting": "llm"
+  }
+]

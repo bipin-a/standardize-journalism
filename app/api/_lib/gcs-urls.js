@@ -16,6 +16,15 @@ export const getCapitalIndexUrl = () =>
 export const getCouncilSummaryUrl = () =>
   process.env.COUNCIL_SUMMARY_URL || `${getGcsBaseUrl()}/gold/council-decisions/summary.json`
 
+export const getCouncilIndexUrl = () =>
+  process.env.COUNCIL_INDEX_URL || `${getGcsBaseUrl()}/gold/council-decisions/index.json`
+
+export const getCouncilTrendsUrl = () =>
+  process.env.COUNCIL_TRENDS_URL || `${getGcsBaseUrl()}/gold/council-decisions/trends.json`
+
+export const getRagIndexUrl = () =>
+  process.env.RAG_INDEX_URL || `${getGcsBaseUrl()}/gold/rag/index.json`
+
 export const getFinancialReturnUrl = () =>
   process.env.FINANCIAL_RETURN_URL || `${getGcsBaseUrl()}/processed/latest/financial_return.json`
 

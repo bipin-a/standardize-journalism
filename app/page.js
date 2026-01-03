@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import ChatWidget from './components/ChatWidget'
 
 const DEFAULT_YEAR = 2024
 const COMPACT_FORMATTER = new Intl.NumberFormat('en-CA', {
@@ -61,6 +62,11 @@ const getCategoryLabel = (category) => {
     other: 'Other'
   }
   return labels[category] || category
+}
+
+const formatWardLabel = (wardNumber, wardName) => {
+  if (!wardNumber) return wardName || 'Unknown'
+  return `Ward ${wardNumber} - ${wardName || 'Unknown'}`
 }
 
 export default function Home() {
@@ -412,20 +418,25 @@ export default function Home() {
 
         {metric && (
           <>
-            {/* Section 1: City Spending on Contracts */}
-            <div style={{ padding: '32px 20px', borderBottom: '1px solid #e5e7eb' }}>
-              <div
-                style={{
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: '#6b7280',
-                  marginBottom: '8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}
-              >
-                Section 1: City Spending on Contracts
-              </div>
+        {/* Section 1: City Spending on Contracts */}
+        <div style={{ padding: '32px 20px', borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div
+              style={{
+                fontSize: '13px',
+                fontWeight: 600,
+                color: '#6b7280',
+                marginBottom: '8px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}
+            >
+              Section 1: City Spending on Contracts
+            </div>
+            <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+              Year: {year}
+            </div>
+          </div>
               <div
                 style={{
                   fontSize: '48px',
@@ -525,17 +536,22 @@ export default function Home() {
 
             {/* Section 2: Who's Getting the Money? */}
             <div style={{ padding: '32px 20px', borderBottom: '1px solid #e5e7eb' }}>
-              <div
-                style={{
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: '#6b7280',
-                  marginBottom: '16px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}
-              >
-                Section 2: Who's Getting the Money?
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: '#6b7280',
+                    marginBottom: '16px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}
+                >
+                  Section 2: Who's Getting the Money?
+                </div>
+                <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                  Year: {year}
+                </div>
               </div>
 
               <div
@@ -556,6 +572,11 @@ export default function Home() {
                   <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
                     of all spending {metric.competitive.top1VendorShare > 20 && '⚠️ High concentration'}
                   </div>
+                  {metric.competitive.topVendors?.[0]?.name && (
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '6px' }}>
+                      Top vendor: {metric.competitive.topVendors[0].name}
+                    </div>
+                  )}
                 </div>
                 <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}>
                   <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#6b7280', marginBottom: '6px', fontWeight: 600 }}>
@@ -630,17 +651,22 @@ export default function Home() {
 
             {/* Section 3: What Are We Buying? */}
             <div style={{ padding: '32px 20px', borderBottom: '1px solid #e5e7eb' }}>
-              <div
-                style={{
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: '#6b7280',
-                  marginBottom: '16px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}
-              >
-                Section 3: What Are We Buying?
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: '#6b7280',
+                    marginBottom: '16px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}
+                >
+                  Section 3: What Are We Buying?
+                </div>
+                <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                  Year: {year}
+                </div>
               </div>
 
               <div style={{ fontSize: '15px', fontWeight: 600, color: '#111827', marginBottom: '12px' }}>
@@ -738,17 +764,22 @@ export default function Home() {
 
         {capitalData && (
           <div style={{ padding: '32px 20px', borderBottom: '1px solid #e5e7eb' }}>
-            <div
-              style={{
-                fontSize: '13px',
-                fontWeight: 600,
-                color: '#6b7280',
-                marginBottom: '8px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px'
-              }}
-            >
-              Section 4: Your Neighborhood
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: '#6b7280',
+                  marginBottom: '8px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                Section 4: Your Neighborhood
+              </div>
+              <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                Year: {year}
+              </div>
             </div>
             <div
               style={{
@@ -867,7 +898,7 @@ export default function Home() {
                             strokeWidth="2"
                             style={{ cursor: 'pointer' }}
                           >
-                            <title>{`${feature.properties.ward_name}: ${formatCompactCurrency(investment)}`}</title>
+                            <title>{`${formatWardLabel(feature.properties.ward_number, feature.properties.ward_name)}: ${formatCompactCurrency(investment)}`}</title>
                           </path>
                         </g>
                       )
@@ -908,7 +939,9 @@ export default function Home() {
                       }}
                     >
                       <div style={{ flex: 1 }}>
-                        <span style={{ color: '#111827', fontWeight: 500 }}>{ward.ward_name}</span>
+                        <span style={{ color: '#111827', fontWeight: 500 }}>
+                          {formatWardLabel(ward.ward_number, ward.ward_name)}
+                        </span>
                         <div style={{ fontSize: '10px', color: '#94a3b8' }}>
                           {ward.projectCount} projects • {ward.topCategory}
                         </div>
@@ -937,7 +970,9 @@ export default function Home() {
                       }}
                     >
                       <div style={{ flex: 1 }}>
-                        <span style={{ color: '#111827', fontWeight: 500 }}>{ward.ward_name}</span>
+                        <span style={{ color: '#111827', fontWeight: 500 }}>
+                          {formatWardLabel(ward.ward_number, ward.ward_name)}
+                        </span>
                         <div style={{ fontSize: '10px', color: '#94a3b8' }}>
                           {ward.projectCount} projects • {ward.topCategory}
                         </div>
@@ -1052,17 +1087,22 @@ export default function Home() {
         {/* Section 5: Council Decisions */}
         {!councilLoading && !councilError && councilData && (
           <div style={{ padding: '32px 20px', borderBottom: '1px solid #e5e7eb' }}>
-            <div
-              style={{
-                fontSize: '13px',
-                fontWeight: 600,
-                color: '#6b7280',
-                marginBottom: '16px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px'
-              }}
-            >
-              Section 5: Council Decisions
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: '#6b7280',
+                  marginBottom: '16px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                Section 5: Council Decisions
+              </div>
+              <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                Year: {year}
+              </div>
             </div>
 
             {/* Last Updated Timestamp */}
@@ -1091,8 +1131,15 @@ export default function Home() {
                 <div key={decision.motion_id || idx} style={{ marginBottom: '12px', padding: '12px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                     <div style={{ flex: 1, minWidth: '200px' }}>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>
-                        {decision.motion_title}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '6px' }}>
+                        {decision.motion_id && (
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#2563eb' }}>
+                            {decision.motion_id}
+                          </span>
+                        )}
+                        <span style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>
+                          {decision.motion_title}
+                        </span>
                       </div>
                       <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
                         {decision.meeting_date} • {getCategoryLabel(decision.motion_category)}
@@ -1363,6 +1410,9 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {/* Floating Chat Widget */}
+      <ChatWidget mode="floating" />
     </div>
   )
 }
