@@ -10,37 +10,37 @@ A Next.js dashboard for Toronto procurement, capital investment, money flow, and
 
 ```mermaid
 flowchart LR
-  subgraph Sources [Toronto Open Data (CKAN)]
-    S1[Capital Budget by Ward (XLSX)]
-    S2[Financial Return (XLSX)]
-    S3[Council Voting (Datastore)]
-    S4[Lobbyist Registry (ZIP/XML)]
-    S5[Ward Boundaries (GeoJSON)]
+  subgraph Sources["Toronto Open Data (CKAN)"]
+    S1["Capital Budget by Ward (XLSX)"]
+    S2["Financial Return (XLSX)"]
+    S3["Council Voting (Datastore)"]
+    S4["Lobbyist Registry (ZIP/XML)"]
+    S5["Ward Boundaries (GeoJSON)"]
   end
 
-  subgraph Schedule [Automation]
-    C1[GitHub Actions\nDaily 06:00 UTC]
+  subgraph Schedule["Automation"]
+    C1["GitHub Actions<br/>Daily 06:00 UTC"]
   end
 
-  subgraph ETL [ETL Pipeline: etl/publish_data_gcs.py]
-    E1[Download + Normalize]
-    E2[Raw dumps\n(data/raw)]
-    E3[Processed datasets\n(data/processed)]
-    E4[Gold summaries\n(data/gold)]
-    E5[Gold indexes\nindex.json]
-    E6[Run manifest\nmetadata/etl_manifest_latest.json]
+  subgraph ETL["ETL Pipeline: etl/publish_data_gcs.py"]
+    E1["Download + Normalize"]
+    E2["Raw dumps<br/>(data/raw)"]
+    E3["Processed datasets<br/>(data/processed)"]
+    E4["Gold summaries<br/>(data/gold)"]
+    E5["Gold indexes<br/>index.json"]
+    E6["Run manifest<br/>metadata/etl_manifest_latest.json"]
   end
 
-  subgraph Storage [GCS]
-    G1[Processed latest\nprocessed/latest/*]
-    G1b[Processed by year\nprocessed/{dataset}/{year}.json]
-    G2[Gold\n gold/*]
-    G3[Manifest\nmetadata/etl_manifest_latest.json]
+  subgraph Storage["GCS"]
+    G1["Processed latest<br/>processed/latest/*"]
+    G1b["Processed by year<br/>processed/{dataset}/{year}.json"]
+    G2["Gold<br/>gold/*"]
+    G3["Manifest<br/>metadata/etl_manifest_latest.json"]
   end
 
-  subgraph App [Runtime]
-    A1[Next.js API routes]
-    A2[UI]
+  subgraph App["Runtime"]
+    A1["Next.js API routes"]
+    A2["UI"]
     A1 --> A2
   end
 

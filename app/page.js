@@ -75,6 +75,7 @@ export default function Home() {
   const [wardMapData, setWardMapData] = useState(null)
   const [moneyFlow, setMoneyFlow] = useState(null)
   const [councilData, setCouncilData] = useState(null)
+  const [version, setVersion] = useState(null)
   const [loading, setLoading] = useState(true)
   const [capitalLoading, setCapitalLoading] = useState(true)
   const [wardMapLoading, setWardMapLoading] = useState(true)
@@ -194,6 +195,19 @@ export default function Home() {
       })
   }, [year])
 
+  useEffect(() => {
+    fetch('/api/version')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.version) {
+          setVersion(data.version)
+        }
+      })
+      .catch(() => {
+        setVersion(null)
+      })
+  }, [])
+
   const renderGroupList = (groups, color) => {
     if (!groups || groups.length === 0) {
       return (
@@ -253,16 +267,32 @@ export default function Home() {
       >
         {/* Header */}
         <div style={{ padding: '24px 20px', borderBottom: '1px solid #e5e7eb' }}>
-          <h1
-            style={{
-              margin: '0 0 8px 0',
-              fontSize: '28px',
-              color: '#111827',
-              fontWeight: 700
-            }}
-          >
-            Toronto Money Flow
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+            <h1
+              style={{
+                margin: '0 0 8px 0',
+                fontSize: '28px',
+                color: '#111827',
+                fontWeight: 700
+              }}
+            >
+              Toronto Money Flow
+            </h1>
+            {version && (
+              <span
+                style={{
+                  fontSize: '12px',
+                  color: '#6b7280',
+                  border: '1px solid #e5e7eb',
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                  backgroundColor: '#f9fafb'
+                }}
+              >
+                {version}
+              </span>
+            )}
+          </div>
           <p
             style={{
               margin: '0 0 16px 0',
