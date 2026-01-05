@@ -8,6 +8,9 @@ export const revalidate = 3600
 const LOCAL_DATA_PATH = 'data/processed/financial_return.json'
 const LOCAL_GOLD_INDEX_PATH = 'data/gold/money-flow/index.json'
 const GROUP_LIMIT = 7
+const CKAN_BASE_URL = 'https://ckan0.cf.opendata.inter.prod-toronto.ca/api/3/action'
+const CKAN_PACKAGE_ID = 'revenues-and-expenses'
+const CKAN_DATASET_URL = 'https://open.toronto.ca/dataset/revenues-and-expenses/'
 
 const loadLocalJson = async (localPath) => {
   const fileContent = await readFile(join(process.cwd(), localPath), 'utf-8')
@@ -20,6 +23,53 @@ const fetchJson = async (url) => {
     throw new Error(`Failed to fetch ${url}: ${response.statusText}`)
   }
   return response.json()
+}
+
+const extractResourceYear = (resource) => {
+  const text = [
+    resource?.name,
+    resource?.title,
+    resource?.url
+  ]
+    .filter(Boolean)
+    .join(' ')
+  const match = text.match(/\b(20\d{2})\b/)
+  if (!match) {
+    return null
+  }
+  const year = Number(match[1])
+  return Number.isFinite(year) ? year : null
+}
+
+const loadCkanSourceStatus = async (requestedYear) => {
+  try {
+    const response = await fetchJson(`${CKAN_BASE_URL}/package_show?id=${CKAN_PACKAGE_ID}`)
+    const pkg = response?.result
+    const resources = Array.isArray(pkg?.resources) ? pkg.resources : []
+    const resourceYears = resources
+      .map(extractResourceYear)
+      .filter(Number.isFinite)
+    const lastPublishedYear = resourceYears.length
+      ? Math.max(...resourceYears)
+      : null
+
+    return {
+      dataset: pkg?.title || 'Financial Information Return (Schedule 10 & 40)',
+      datasetUrl: CKAN_DATASET_URL,
+      lastModified: pkg?.metadata_modified || null,
+      lastPublishedYear,
+      requestedYear: Number.isFinite(requestedYear) ? requestedYear : null
+    }
+  } catch (error) {
+    console.warn('CKAN metadata lookup failed:', error.message)
+    return {
+      dataset: 'Financial Information Return (Schedule 10 & 40)',
+      datasetUrl: CKAN_DATASET_URL,
+      lastModified: null,
+      lastPublishedYear: null,
+      requestedYear: Number.isFinite(requestedYear) ? requestedYear : null
+    }
+  }
 }
 
 const loadMoneyFlowIndex = async () => {
@@ -135,9 +185,11 @@ export async function GET(request) {
     }
 
     if (availableYears.length === 0) {
+      const sourceStatus = await loadCkanSourceStatus(requestedYear)
       return Response.json({
         error: 'No money flow data available',
-        availableYears
+        availableYears,
+        sourceStatus
       }, { status: 404 })
     }
 
@@ -146,9 +198,11 @@ export async function GET(request) {
       : latestYear
 
     if (!availableYears.includes(year)) {
+      const sourceStatus = await loadCkanSourceStatus(year)
       return Response.json({
         error: `No money flow data available for ${year}`,
-        availableYears
+        availableYears,
+        sourceStatus
       }, { status: 404 })
     }
 

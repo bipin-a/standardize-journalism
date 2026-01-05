@@ -861,6 +861,7 @@ def main():
 
     capital_config = datasets.get("capital_by_ward", {})
     financial_config = datasets.get("financial_return", {})
+    operating_config = datasets.get("operating_budget", {})
     council_config = datasets.get("council_voting", {})
     council_summary_config = datasets.get("council_summary", {})
     lobbyist_config = datasets.get("lobbyist_registry", {})
@@ -869,14 +870,15 @@ def main():
     capital_csv_name = capital_config.get("output_filename")
     capital_json_name = capital_config.get("json_output_filename")
     financial_name = financial_config.get("output_filename")
+    operating_name = operating_config.get("output_filename")
     council_name = council_config.get("output_filename")
     council_summary_name = council_summary_config.get("output_filename")
     lobbyist_name = lobbyist_config.get("output_filename")
     ward_geojson_name = ward_geojson_config.get("output_filename")
     ward_geojson_resource_id = ward_geojson_config.get("resource_id")
 
-    if not capital_csv_name or not capital_json_name or not financial_name:
-        raise SystemExit("Missing output filenames in config.yaml for capital_by_ward or financial_return")
+    if not capital_csv_name or not capital_json_name or not financial_name or not operating_name:
+        raise SystemExit("Missing output filenames in config.yaml for capital_by_ward, financial_return, or operating_budget")
     if not council_name or not lobbyist_name or not ward_geojson_name:
         raise SystemExit("Missing output filenames in config.yaml for council_voting, lobbyist_registry, or ward_geojson")
     if not council_summary_name:
@@ -892,6 +894,7 @@ def main():
     capital_csv_path = processed_dir / capital_csv_name
     capital_json_path = processed_dir / capital_json_name
     financial_path = processed_dir / financial_name
+    operating_path = processed_dir / operating_name
     council_path = processed_dir / council_name
     council_summary_path = processed_dir / council_summary_name
     lobbyist_path = processed_dir / lobbyist_name
@@ -900,6 +903,7 @@ def main():
     print("Running ETL...")
     run_cmd([sys.executable, "etl/capital_by_ward_etl.py", "--output", str(capital_csv_path), "--json-output", str(capital_json_path)])
     run_cmd([sys.executable, "etl/financial_return_etl.py", "--output", str(financial_path), "--raw-dir", str(raw_dir)])
+    run_cmd([sys.executable, "etl/operating_budget_etl.py", "--output", str(operating_path), "--raw-dir", str(raw_dir)])
     run_cmd([sys.executable, "etl/council_voting_etl.py", "--output", str(council_path), "--raw-dir", str(raw_dir)])
     run_cmd([sys.executable, "etl/lobbyist_registry_etl.py", "--output", str(lobbyist_path), "--raw-dir", str(raw_dir)])
 
@@ -915,6 +919,7 @@ def main():
     print("Extracting metadata from ETL outputs...")
     capital_start, capital_end = load_year_range(capital_json_path, "Capital budget")
     financial_start, financial_end = load_year_range(financial_path, "Financial return")
+    operating_start, operating_end = load_year_range(operating_path, "Operating budget")
     council_records, council_start, council_end = load_records_with_year_range(
         council_path, "Council voting", ["meeting_date"]
     )
@@ -934,10 +939,12 @@ def main():
 
     # Load full datasets for aggregation
     financial_records = load_json_list(financial_path, "Financial return")
+    operating_records = load_json_list(operating_path, "Operating budget")
     capital_records = load_json_list(capital_json_path, "Capital budget")
 
     # Get available years for each dataset
     financial_years = sorted({int(r["fiscal_year"]) for r in financial_records if "fiscal_year" in r})
+    operating_years = sorted({int(r["fiscal_year"]) for r in operating_records if "fiscal_year" in r})
     capital_years = sorted({int(r["fiscal_year"]) for r in capital_records if "fiscal_year" in r})
     council_years = sorted({
         year for year in (parse_year(motion.get("meeting_date")) for motion in council_records) if year
@@ -959,6 +966,16 @@ def main():
         with open(year_path, "w", encoding="utf-8") as handle:
             json.dump(year_records, handle, indent=2)
         financial_processed_files.append({"year": year, "path": year_path})
+
+    operating_processed_year_dir = processed_dir / "operating-budget"
+    operating_processed_year_dir.mkdir(parents=True, exist_ok=True)
+    operating_processed_files = []
+    for year in operating_years:
+        year_records = [r for r in operating_records if r.get("fiscal_year") == year]
+        year_path = operating_processed_year_dir / f"{year}.json"
+        with open(year_path, "w", encoding="utf-8") as handle:
+            json.dump(year_records, handle, indent=2)
+        operating_processed_files.append({"year": year, "path": year_path})
 
     capital_processed_year_dir = processed_dir / "capital-by-ward"
     capital_processed_year_dir.mkdir(parents=True, exist_ok=True)
@@ -1092,6 +1109,7 @@ def main():
     processed_latest_prefix = f"gs://{bucket_name}/processed/latest"
     capital_latest_dest = f"{processed_latest_prefix}/capital_by_ward.json"
     money_flow_latest_dest = f"{processed_latest_prefix}/financial_return.json"
+    operating_latest_dest = f"{processed_latest_prefix}/operating_budget.json"
     council_latest_dest = f"{processed_latest_prefix}/council_voting.json"
     lobbyist_latest_dest = f"{processed_latest_prefix}/lobbyist_activity.json"
 
@@ -1130,6 +1148,9 @@ def main():
             },
             "financial_return": {
                 "package_id": financial_config.get("package_id"),
+            },
+            "operating_budget": {
+                "package_id": operating_config.get("package_id"),
             },
             "council_voting": {
                 "package_id": council_config.get("package_id"),
@@ -1173,6 +1194,21 @@ def main():
                         "gcs_path": f"gs://{bucket_name}/processed/financial-return/{entry['year']}.json",
                     }
                     for entry in financial_processed_files
+                ],
+            },
+            "operating_budget": {
+                **file_stats(operating_path),
+                "latest_gcs_path": operating_latest_dest,
+                "record_count": len(operating_records),
+                "year_start": operating_start,
+                "year_end": operating_end,
+                "by_year": [
+                    {
+                        "year": entry["year"],
+                        **file_stats(entry["path"]),
+                        "gcs_path": f"gs://{bucket_name}/processed/operating-budget/{entry['year']}.json",
+                    }
+                    for entry in operating_processed_files
                 ],
             },
             "council_voting": {
@@ -1296,6 +1332,7 @@ def main():
     print("Uploading JSON to GCS...")
     ward_geojson_cmd = ["gcloud", "--project", project_id, "storage", "cp", str(ward_geojson_path), ward_geojson_dest]
     money_flow_latest_cmd = ["gcloud", "--project", project_id, "storage", "cp", str(financial_path), money_flow_latest_dest]
+    operating_latest_cmd = ["gcloud", "--project", project_id, "storage", "cp", str(operating_path), operating_latest_dest]
     capital_latest_cmd = ["gcloud", "--project", project_id, "storage", "cp", str(capital_json_path), capital_latest_dest]
     council_latest_cmd = ["gcloud", "--project", project_id, "storage", "cp", str(council_path), council_latest_dest]
     lobbyist_latest_cmd = ["gcloud", "--project", project_id, "storage", "cp", str(lobbyist_path), lobbyist_latest_dest]
@@ -1303,12 +1340,14 @@ def main():
     if cache_control:
         ward_geojson_cmd.extend(["--cache-control", cache_control])
         money_flow_latest_cmd.extend(["--cache-control", cache_control])
+        operating_latest_cmd.extend(["--cache-control", cache_control])
         capital_latest_cmd.extend(["--cache-control", cache_control])
         council_latest_cmd.extend(["--cache-control", cache_control])
         lobbyist_latest_cmd.extend(["--cache-control", cache_control])
 
     run_cmd(ward_geojson_cmd)
     run_cmd(money_flow_latest_cmd)
+    run_cmd(operating_latest_cmd)
     run_cmd(capital_latest_cmd)
     run_cmd(council_latest_cmd)
     run_cmd(lobbyist_latest_cmd)
@@ -1316,6 +1355,15 @@ def main():
     # Upload financial return processed files by year
     for entry in financial_processed_files:
         dest = f"gs://{bucket_name}/processed/financial-return/{entry['year']}.json"
+        cmd = ["gcloud", "--project", project_id, "storage", "cp", str(entry["path"]), dest]
+        if cache_control:
+            cmd.extend(["--cache-control", cache_control])
+        run_cmd(cmd)
+        print(f"  Uploaded {dest}")
+
+    # Upload operating budget processed files by year
+    for entry in operating_processed_files:
+        dest = f"gs://{bucket_name}/processed/operating-budget/{entry['year']}.json"
         cmd = ["gcloud", "--project", project_id, "storage", "cp", str(entry["path"]), dest]
         if cache_control:
             cmd.extend(["--cache-control", cache_control])

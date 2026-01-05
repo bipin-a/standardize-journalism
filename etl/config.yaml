@@ -12,6 +12,11 @@ datasets:
     gcs_path_template: processed/latest/financial_return.json
     gold_path_template: gold/money-flow/{year}.json
 
+  operating_budget:
+    package_id: budget-operating-budget-program-summary-by-expenditure-category
+    output_filename: operating_budget.json
+    gcs_path_template: processed/latest/operating_budget.json
+
   council_voting:
     package_id: 7f5232d6-0d2a-4f95-864a-417cbf341cc4
     resource_id: 55ead013-2331-4686-9895-9e8145b94189

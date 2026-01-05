@@ -28,6 +28,9 @@ export const getRagIndexUrl = () =>
 export const getFinancialReturnUrl = () =>
   process.env.FINANCIAL_RETURN_URL || `${getGcsBaseUrl()}/processed/latest/financial_return.json`
 
+export const getOperatingBudgetUrl = () =>
+  process.env.OPERATING_BUDGET_URL || `${getGcsBaseUrl()}/processed/latest/operating_budget.json`
+
 export const getCapitalDataUrl = () =>
   process.env.CAPITAL_DATA_URL || `${getGcsBaseUrl()}/processed/latest/capital_by_ward.json`
 

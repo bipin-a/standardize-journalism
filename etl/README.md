@@ -10,6 +10,7 @@ The ETL pipeline processes five active datasets:
 |---------|--------|--------|------------------|
 | Capital Budget by Ward | `capital_by_ward_etl.py` | `capital_by_ward.csv` + `capital_by_ward.json` | Annual (as published) |
 | Financial Return (Revenue/Expenses) | `financial_return_etl.py` | `financial_return.json` | Annual (as published) |
+| Operating Budget Summary | `operating_budget_etl.py` | `operating_budget.json` | Annual (as published) |
 | Council Voting Records | `council_voting_etl.py` | `council_voting.json` | Weekly (as minutes are published) |
 | Lobbyist Registry Activity | `lobbyist_registry_etl.py` | `lobbyist_activity.json` | Daily (as published) |
 | Council Decisions Summary | `publish_data_gcs.py` | `gold/council-decisions/summary.json`, `gold/council-decisions/{year}.json`, `gold/council-decisions/index.json`, `gold/council-decisions/trends.json` | Daily (derived) |
@@ -100,6 +101,11 @@ uv run --with-requirements etl/requirements.txt -- \
 uv run --with-requirements etl/requirements.txt -- \
   python etl/financial_return_etl.py \
   --output data/processed/financial_return.json
+
+# Operating budget summary (XLSX download + parsing)
+uv run --with-requirements etl/requirements.txt -- \
+  python etl/operating_budget_etl.py \
+  --output data/processed/operating_budget.json
 
 # Council voting (datastore API with pagination)
 uv run --with-requirements etl/requirements.txt -- \

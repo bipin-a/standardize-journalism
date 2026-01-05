@@ -5,6 +5,7 @@ import {
   getFinancialReturnUrl,
   getGcsBaseUrl,
   getLobbyistDataUrl,
+  getOperatingBudgetUrl,
   getVotingDataUrl
 } from './gcs-urls'
 
@@ -62,6 +63,12 @@ const getProcessedConfig = (dataset) => {
       latestUrl: getFinancialReturnUrl(),
       latestLocal: 'data/processed/financial_return.json',
       label: 'financial return'
+    },
+    'operating-budget': {
+      folder: 'operating-budget',
+      latestUrl: getOperatingBudgetUrl(),
+      latestLocal: 'data/processed/operating_budget.json',
+      label: 'operating budget'
     },
     lobbyist: {
       folder: 'lobbyist-registry',
