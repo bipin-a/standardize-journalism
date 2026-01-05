@@ -390,6 +390,8 @@ Council trends (`data/gold/council-decisions/trends.json`) are compact per-year 
   "availableYears": [2020, 2021, 2022, 2023, 2024],
   "revenue": {
     "total": 10800000000,
+    "lineItemTotal": 10800000000,
+    "reportedTotal": 18200000000,
     "topGroups": [
       { "label": "Property Taxes", "amount": 5200000000, "percentage": 48.1 }
     ],
@@ -399,6 +401,8 @@ Council trends (`data/gold/council-decisions/trends.json`) are compact per-year 
   },
   "expenditure": {
     "total": 10700000000,
+    "lineItemTotal": 10700000000,
+    "reportedTotal": 16186000000,
     "topGroups": [
       { "label": "Transportation", "amount": 3800000000, "percentage": 35.5 }
     ],
@@ -409,11 +413,20 @@ Council trends (`data/gold/council-decisions/trends.json`) are compact per-year 
   "balance": {
     "amount": 100000000,
     "isSurplus": true,
-    "percentageOfRevenue": 0.9
+    "percentageOfRevenue": 0.9,
+    "reported": {
+      "amount": 2016000000,
+      "isSurplus": true,
+      "percentageOfRevenue": 11.1
+    }
   },
   "timestamp": "2024-12-26T10:30:00Z"
 }
 ```
+
+Notes:
+- `total`/`lineItemTotal` are sums of filtered line items (summary/rollup rows removed).
+- `reportedTotal` and `balance.reported` come from FIR summary lines (PLUS: Total Revenues / LESS: Total Expenses) when available.
 
 ### 2.4 /api/council-decisions
 

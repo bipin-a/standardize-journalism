@@ -6,6 +6,7 @@ import { getMoneyFlowIndexUrl, getFinancialReturnUrl } from '../_lib/gcs-urls'
 export const revalidate = 3600
 
 const LOCAL_DATA_PATH = 'data/processed/financial_return.json'
+const LOCAL_TOTALS_PATH = 'data/processed/financial_return_totals.json'
 const LOCAL_GOLD_INDEX_PATH = 'data/gold/money-flow/index.json'
 const GROUP_LIMIT = 7
 const CKAN_BASE_URL = 'https://ckan0.cf.opendata.inter.prod-toronto.ca/api/3/action'
@@ -15,6 +16,22 @@ const CKAN_DATASET_URL = 'https://open.toronto.ca/dataset/revenues-and-expenses/
 const loadLocalJson = async (localPath) => {
   const fileContent = await readFile(join(process.cwd(), localPath), 'utf-8')
   return JSON.parse(fileContent)
+}
+
+const loadLocalTotalsForYear = async (year) => {
+  if (!Number.isFinite(year)) {
+    return null
+  }
+  try {
+    const totals = await loadLocalJson(LOCAL_TOTALS_PATH)
+    const totalsByYear = totals?.years
+    if (!totalsByYear || typeof totalsByYear !== 'object') {
+      return null
+    }
+    return totalsByYear[String(year)] ?? null
+  } catch (error) {
+    return null
+  }
 }
 
 const fetchJson = async (url) => {
@@ -229,6 +246,30 @@ export async function GET(request) {
     const expenditure = buildTopBottomGroups(aggregateByLabel(expenseRecords))
 
     const balanceAmount = revenue.total - expenditure.total
+    const reportedTotals = await loadLocalTotalsForYear(year)
+    const reportedRevenueValue = reportedTotals?.reported_revenue_total
+    const reportedExpenseValue = reportedTotals?.reported_expense_total
+    const reportedRevenue = (reportedRevenueValue === null || reportedRevenueValue === undefined)
+      ? null
+      : Number(reportedRevenueValue)
+    const reportedExpense = (reportedExpenseValue === null || reportedExpenseValue === undefined)
+      ? null
+      : Number(reportedExpenseValue)
+    const safeReportedRevenue = Number.isFinite(reportedRevenue) ? reportedRevenue : null
+    const safeReportedExpense = Number.isFinite(reportedExpense) ? reportedExpense : null
+    const reportedBalance = (safeReportedRevenue !== null && safeReportedExpense !== null)
+      ? safeReportedRevenue - safeReportedExpense
+      : null
+
+    revenue.lineItemTotal = revenue.total
+    if (safeReportedRevenue !== null) {
+      revenue.reportedTotal = safeReportedRevenue
+    }
+
+    expenditure.lineItemTotal = expenditure.total
+    if (safeReportedExpense !== null) {
+      expenditure.reportedTotal = safeReportedExpense
+    }
 
     return Response.json({
       year,
@@ -238,7 +279,16 @@ export async function GET(request) {
       balance: {
         amount: balanceAmount,
         isSurplus: balanceAmount >= 0,
-        percentageOfRevenue: revenue.total > 0 ? (balanceAmount / revenue.total) * 100 : 0
+        percentageOfRevenue: revenue.total > 0 ? (balanceAmount / revenue.total) * 100 : 0,
+        reported: reportedBalance !== null
+          ? {
+              amount: reportedBalance,
+              isSurplus: reportedBalance >= 0,
+              percentageOfRevenue: safeReportedRevenue
+                ? (reportedBalance / safeReportedRevenue) * 100
+                : 0
+            }
+          : null
       },
       timestamp: new Date().toISOString()
     })

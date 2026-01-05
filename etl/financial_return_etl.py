@@ -118,7 +118,51 @@ def is_summary_row(description):
         return True
     if lowered.startswith("total "):
         return True
+    summary_phrases = [
+        "plus: total",
+        "less: total",
+        "annual surplus",
+        "annual deficit",
+        "accumulated surplus",
+        "restated accumulated surplus",
+        "recognized in the year",
+        "continuity of",
+        "government business enterprise equity",
+        "plus: net income",
+        "less: dividends",
+    ]
+    if any(phrase in lowered for phrase in summary_phrases):
+        return True
     return False
+
+
+def extract_summary_totals(df, desc_col, amount_col):
+    totals = {}
+    for _, row in df.iterrows():
+        description = row.get(desc_col)
+        if pd.isna(description) or str(description).strip() == "":
+            continue
+        cleaned = clean_description(description)
+        if not cleaned:
+            continue
+        lowered = cleaned.lower()
+        amount = parse_number(row.get(amount_col))
+        if amount is None:
+            continue
+
+        def update_total(key):
+            current = totals.get(key)
+            if current is None or abs(amount) > abs(current):
+                totals[key] = amount
+
+        if "plus: total revenues" in lowered or lowered == "total revenues":
+            update_total("reported_revenue_total")
+        elif "less: total expenses" in lowered or lowered == "total expenses":
+            update_total("reported_expense_total")
+        elif "annual surplus" in lowered or "annual deficit" in lowered:
+            update_total("annual_surplus")
+
+    return totals
 
 
 def detect_year_in_sheet(df):
@@ -268,6 +312,19 @@ def run_etl(args):
     all_records = []
     processed_resources = []
     failed_resources = []
+    summary_by_year = {}
+    summary_sources = {}
+
+    def merge_summary_totals(year, totals, source_meta):
+        if not totals:
+            return
+        year_key = str(year)
+        year_totals = summary_by_year.setdefault(year_key, {})
+        for key, value in totals.items():
+            existing = year_totals.get(key)
+            if existing is None or abs(value) > abs(existing):
+                year_totals[key] = value
+        summary_sources.setdefault(year_key, []).append(source_meta)
 
     for resource in resources:
         try:
@@ -359,6 +416,19 @@ def run_etl(args):
                 "source_resource_name": resource.get("name")
             }
 
+            revenue_totals = extract_summary_totals(
+                df_revenue,
+                revenue_desc_col,
+                revenue_amount_col
+            )
+            expense_totals = extract_summary_totals(
+                df_expenditure,
+                expense_desc_col,
+                expense_amount_col
+            )
+            merge_summary_totals(fiscal_year, revenue_totals, source_meta)
+            merge_summary_totals(fiscal_year, expense_totals, source_meta)
+
             revenue_records = parse_sheet(
                 df_revenue,
                 "revenue",
@@ -416,6 +486,16 @@ def run_etl(args):
 
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(aggregated_records, f, indent=2)
+
+    if summary_by_year:
+        totals_payload = {
+            "generated_at": ingested_at,
+            "years": summary_by_year,
+            "sources": summary_sources
+        }
+        totals_path = output_path.parent / "financial_return_totals.json"
+        with open(totals_path, "w", encoding="utf-8") as f:
+            json.dump(totals_payload, f, indent=2)
 
     # Print summary
     years_found = sorted(set(r['fiscal_year'] for r in aggregated_records))

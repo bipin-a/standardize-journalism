@@ -140,6 +140,8 @@ export default function Home() {
   const [showCapitalDetails, setShowCapitalDetails] = useState(false)
   const [showVotingDetails, setShowVotingDetails] = useState(false)
   const [showAllBudgetCategories, setShowAllBudgetCategories] = useState(false)
+  const [showRevenueGapExplainer, setShowRevenueGapExplainer] = useState(false)
+  const [showExpenditureGapExplainer, setShowExpenditureGapExplainer] = useState(false)
 
   const currentYear = new Date().getFullYear()
   const yearOptions = Array.from(
@@ -459,99 +461,296 @@ export default function Home() {
           </div>
         )}
 
-        {moneyFlow && (
-          <div style={{ padding: '32px 20px', borderBottom: '1px solid #e5e7eb' }}>
-            <div
-              style={{
-                fontSize: '13px',
-                fontWeight: 600,
-                color: '#6b7280',
-                marginBottom: '8px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px'
-              }}
-            >
-              Section 0: Money In / Money Out
-            </div>
+        {moneyFlow && (() => {
+          const revenueLineItemTotal = moneyFlow.revenue?.lineItemTotal ?? moneyFlow.revenue?.total ?? null
+          const revenueReportedTotal = moneyFlow.revenue?.reportedTotal ?? null
+          const revenueHeadlineTotal = revenueReportedTotal ?? revenueLineItemTotal
+          const revenueReconciliation = (
+            revenueReportedTotal !== null && revenueLineItemTotal !== null
+          )
+            ? revenueReportedTotal - revenueLineItemTotal
+            : null
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-                gap: '20px',
-                marginTop: '16px'
-              }}
-            >
-              <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>
-                  Money Coming In
-                </div>
-                <div style={{ fontSize: '28px', fontWeight: 700, color: '#10b981', marginTop: '8px' }}>
-                  {formatCompactCurrency(moneyFlow.revenue.total)}
-                </div>
+          const expenditureLineItemTotal = moneyFlow.expenditure?.lineItemTotal ?? moneyFlow.expenditure?.total ?? null
+          const expenditureReportedTotal = moneyFlow.expenditure?.reportedTotal ?? null
+          const expenditureHeadlineTotal = expenditureReportedTotal ?? expenditureLineItemTotal
+          const expenditureReconciliation = (
+            expenditureReportedTotal !== null && expenditureLineItemTotal !== null
+          )
+            ? expenditureReportedTotal - expenditureLineItemTotal
+            : null
+          const revenueBottomGroups = (moneyFlow.revenue?.bottomGroups || [])
+            .filter(group => Number(group.amount) > 1)
+            .sort((a, b) => b.amount - a.amount)
+          const expenditureBottomGroups = (moneyFlow.expenditure?.bottomGroups || [])
+            .filter(group => Number(group.amount) > 1)
+            .sort((a, b) => b.amount - a.amount)
 
-                <div style={{ marginTop: '16px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase' }}>
-                    Biggest 7 Sources
-                  </div>
-                  {renderGroupList(moneyFlow.revenue.topGroups, '#10b981')}
-                </div>
+          const reportedBalance = moneyFlow.balance?.reported ?? null
+          const lineItemBalance = moneyFlow.balance
+          const displayBalance = reportedBalance ?? lineItemBalance
+          const displayBalanceLabel = reportedBalance ? 'Audited (FIR)' : 'Line-item'
 
-                {moneyFlow.revenue.bottomGroups.length > 0 && (
-                  <div style={{ marginTop: '16px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase' }}>
-                      Smallest 7 Sources
-                    </div>
-                    {renderGroupList(moneyFlow.revenue.bottomGroups, '#86efac')}
-                  </div>
-                )}
+          return (
+            <div style={{ padding: '32px 20px', borderBottom: '1px solid #e5e7eb' }}>
+              <div
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: '#6b7280',
+                  marginBottom: '8px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                Section 0: Money In / Money Out
               </div>
 
-              <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>
-                  Money Going Out
-                </div>
-                <div style={{ fontSize: '28px', fontWeight: 700, color: '#3b82f6', marginTop: '8px' }}>
-                  {formatCompactCurrency(moneyFlow.expenditure.total)}
-                </div>
-
-                <div style={{ marginTop: '16px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase' }}>
-                    Biggest 7 Costs
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                  gap: '20px',
+                  marginTop: '16px'
+                }}
+              >
+                <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>
+                    Money Coming In
                   </div>
-                  {renderGroupList(moneyFlow.expenditure.topGroups, '#3b82f6')}
-                </div>
+                  {revenueReportedTotal !== null && (
+                    <div style={{ marginTop: '6px', fontSize: '11px', color: '#6b7280' }}>
+                      Reported total (FIR summary)
+                    </div>
+                  )}
+                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#10b981', marginTop: '8px' }}>
+                    {formatCompactCurrency(revenueHeadlineTotal)}
+                  </div>
+                  {revenueReportedTotal !== null && (
+                    <div style={{ marginTop: '8px', fontSize: '11px', color: '#6b7280' }}>
+                      Named line items (CKAN): {formatCompactCurrency(revenueLineItemTotal)}
+                    </div>
+                  )}
+                  {revenueReconciliation !== null && (
+                    <>
+                      <div style={{ marginTop: '4px', fontSize: '11px', color: '#6b7280' }}>
+                        Unmapped / reconciliation: {formatSignedCurrency(revenueReconciliation)}
+                        <button
+                          type="button"
+                          onClick={() => setShowRevenueGapExplainer(!showRevenueGapExplainer)}
+                          style={{
+                            marginLeft: '8px',
+                            fontSize: '11px',
+                            color: '#2563eb',
+                            textDecoration: 'underline',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: 0
+                          }}
+                        >
+                          {showRevenueGapExplainer ? '▼' : '▶'} What's this?
+                        </button>
+                      </div>
+                      {showRevenueGapExplainer && (
+                        <div style={{
+                          marginTop: '8px',
+                          padding: '10px',
+                          backgroundColor: '#f9fafb',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          color: '#6b7280',
+                          lineHeight: '1.6'
+                        }}>
+                          <div style={{ fontWeight: 600, marginBottom: '6px' }}>
+                            What's in the gap?
+                          </div>
+                          These are accounting adjustments not itemized in the CKAN line items:
+                          <ul style={{ margin: '6px 0 0 0', paddingLeft: '18px' }}>
+                            <li>Consolidation adjustments (agencies, boards, commissions)</li>
+                            <li>Deferred revenue timing adjustments</li>
+                            <li>Interfund transfer eliminations</li>
+                            <li>PSAB accounting standard adjustments</li>
+                            <li>Prior period corrections</li>
+                          </ul>
+                          <div style={{ marginTop: '6px', fontSize: '10px', fontStyle: 'italic' }}>
+                            Detailed breakdown is not published as Open Data.
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
 
-                {moneyFlow.expenditure.bottomGroups.length > 0 && (
                   <div style={{ marginTop: '16px' }}>
                     <div style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase' }}>
-                      Smallest 7 Costs
+                      Biggest 7 Sources
                     </div>
-                    {renderGroupList(moneyFlow.expenditure.bottomGroups, '#93c5fd')}
+                    {renderGroupList(moneyFlow.revenue.topGroups, '#10b981')}
                   </div>
-                )}
-              </div>
-            </div>
 
-            <div
-              style={{
-                marginTop: '16px',
-                padding: '12px 16px',
-                borderRadius: '8px',
-                backgroundColor: moneyFlow.balance.isSurplus ? '#ecfdf3' : '#fef2f2',
-                border: `1px solid ${moneyFlow.balance.isSurplus ? '#a7f3d0' : '#fecaca'}`,
-                color: moneyFlow.balance.isSurplus ? '#065f46' : '#991b1b',
-                fontSize: '13px'
-              }}
-            >
-              <strong>{moneyFlow.balance.isSurplus ? 'Surplus' : 'Deficit'}:</strong>{' '}
-              {formatCompactCurrency(moneyFlow.balance.amount)} ({formatPercent(Math.abs(moneyFlow.balance.percentageOfRevenue))} of revenue)
+                  {moneyFlow.revenue.bottomGroups.length > 0 && (
+                    <div style={{ marginTop: '16px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase' }}>
+                        Smallest 7 (by share)
+                      </div>
+                      {renderGroupList(revenueBottomGroups, '#86efac')}
+                      <div style={{ marginTop: '6px', fontSize: '11px', color: '#9ca3af' }}>
+                        Smallest is relative to the full city budget, so values can still be in the tens of millions.
+                      </div>
+                    </div>
+                  )}
+
+                  {revenueReconciliation !== null && (
+                    <div style={{ marginTop: '16px', paddingTop: '10px', borderTop: '1px dashed #d1d5db' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280' }}>
+                        Reconciliation items (FIR only)
+                      </div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827', marginTop: '4px' }}>
+                        {formatSignedCurrency(revenueReconciliation)}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>
+                        Not itemized in CKAN line items.
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>
+                    Money Going Out
+                  </div>
+                  {expenditureReportedTotal !== null && (
+                    <div style={{ marginTop: '6px', fontSize: '11px', color: '#6b7280' }}>
+                      Reported total (FIR summary)
+                    </div>
+                  )}
+                  <div style={{ fontSize: '28px', fontWeight: 700, color: '#3b82f6', marginTop: '8px' }}>
+                    {formatCompactCurrency(expenditureHeadlineTotal)}
+                  </div>
+                  {expenditureReportedTotal !== null && (
+                    <div style={{ marginTop: '8px', fontSize: '11px', color: '#6b7280' }}>
+                      Named line items (CKAN): {formatCompactCurrency(expenditureLineItemTotal)}
+                    </div>
+                  )}
+                  {expenditureReconciliation !== null && (
+                    <>
+                      <div style={{ marginTop: '4px', fontSize: '11px', color: '#6b7280' }}>
+                        Unmapped / reconciliation: {formatSignedCurrency(expenditureReconciliation)}
+                        <button
+                          type="button"
+                          onClick={() => setShowExpenditureGapExplainer(!showExpenditureGapExplainer)}
+                          style={{
+                            marginLeft: '8px',
+                            fontSize: '11px',
+                            color: '#2563eb',
+                            textDecoration: 'underline',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: 0
+                          }}
+                        >
+                          {showExpenditureGapExplainer ? '▼' : '▶'} What's this?
+                        </button>
+                      </div>
+                      {showExpenditureGapExplainer && (
+                        <div style={{
+                          marginTop: '8px',
+                          padding: '10px',
+                          backgroundColor: '#f9fafb',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          color: '#6b7280',
+                          lineHeight: '1.6'
+                        }}>
+                          <div style={{ fontWeight: 600, marginBottom: '6px' }}>
+                            What's in the gap?
+                          </div>
+                          These are accounting adjustments not itemized in the CKAN line items:
+                          <ul style={{ margin: '6px 0 0 0', paddingLeft: '18px' }}>
+                            <li>Consolidation adjustments (agencies, boards, commissions)</li>
+                            <li>Deferred expense timing adjustments</li>
+                            <li>Interfund transfer eliminations</li>
+                            <li>PSAB accounting standard adjustments</li>
+                            <li>Prior period corrections</li>
+                          </ul>
+                          <div style={{ marginTop: '6px', fontSize: '10px', fontStyle: 'italic' }}>
+                            Detailed breakdown is not published as Open Data.
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  <div style={{ marginTop: '16px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase' }}>
+                      Biggest 7 Costs
+                    </div>
+                    {renderGroupList(moneyFlow.expenditure.topGroups, '#3b82f6')}
+                  </div>
+
+                  {moneyFlow.expenditure.bottomGroups.length > 0 && (
+                    <div style={{ marginTop: '16px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase' }}>
+                        Smallest 7 (by share)
+                      </div>
+                      {renderGroupList(expenditureBottomGroups, '#93c5fd')}
+                      <div style={{ marginTop: '6px', fontSize: '11px', color: '#9ca3af' }}>
+                        Smallest is relative to the full city budget, so values can still be in the tens of millions.
+                      </div>
+                    </div>
+                  )}
+
+                  {expenditureReconciliation !== null && (
+                    <div style={{ marginTop: '16px', paddingTop: '10px', borderTop: '1px dashed #d1d5db' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#6b7280' }}>
+                        Reconciliation items (FIR only)
+                      </div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827', marginTop: '4px' }}>
+                        {formatSignedCurrency(expenditureReconciliation)}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>
+                        Not itemized in CKAN line items.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop: '16px',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  backgroundColor: displayBalance.isSurplus ? '#ecfdf3' : '#fef2f2',
+                  border: `1px solid ${displayBalance.isSurplus ? '#a7f3d0' : '#fecaca'}`,
+                  color: displayBalance.isSurplus ? '#065f46' : '#991b1b',
+                  fontSize: '13px'
+                }}
+              >
+                <strong>{displayBalanceLabel} {displayBalance.isSurplus ? 'surplus' : 'deficit'}:</strong>{' '}
+                {formatCompactCurrency(displayBalance.amount)} ({formatPercent(Math.abs(displayBalance.percentageOfRevenue))} of revenue)
+              </div>
+              {reportedBalance && (
+                <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
+                  Line-item balance (CKAN): {formatCompactCurrency(lineItemBalance.amount)}{' '}
+                  ({formatPercent(Math.abs(lineItemBalance.percentageOfRevenue))} of revenue)
+                </div>
+              )}
+              <div style={{ marginTop: '8px', fontSize: '11px', color: '#6b7280' }}>
+                Breakdown uses named line items only. Adjustments and rollups are excluded from the line-item totals.
+              </div>
+              <div style={{ marginTop: '6px', fontSize: '11px', color: '#6b7280' }}>
+                Headline totals use FIR reported totals when available; the reconciliation line captures the difference.
+              </div>
+              {revenueReportedTotal !== null && (
+                <div style={{ marginTop: '6px', fontSize: '11px', color: '#6b7280' }}>
+                  Reported totals come from FIR summary lines and may include reconciliation items not present in the line-item breakdown.
+                </div>
+              )}
             </div>
-            <div style={{ marginTop: '8px', fontSize: '11px', color: '#6b7280' }}>
-              Totals use positive line items only. Adjustments are excluded.
-            </div>
-          </div>
-        )}
+          )
+        })()}
 
         {metric && (
           <>

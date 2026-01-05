@@ -101,6 +101,23 @@ def load_json_list(json_path, label):
     return data
 
 
+def load_json_object(json_path, label, required=False):
+    if not json_path.exists():
+        if required:
+            raise RuntimeError(f"{label} file not found: {json_path}")
+        return None
+
+    with open(json_path, "r", encoding="utf-8") as handle:
+        data = json.load(handle)
+
+    if not isinstance(data, dict):
+        if required:
+            raise RuntimeError(f"{label} data is not a JSON object")
+        return None
+
+    return data
+
+
 def load_year_range(json_path, label):
     data = load_json_list(json_path, label)
     years = sorted({int(row["fiscal_year"]) for row in data if "fiscal_year" in row})
@@ -308,7 +325,7 @@ def build_capital_trends(records, years):
     }
 
 
-def build_money_flow_summary(year, all_records, available_years):
+def build_money_flow_summary(year, all_records, available_years, reported_totals_by_year=None):
     """
     Mirrors /api/money-flow/route.js aggregation logic.
     Returns same shape as API response.
@@ -325,7 +342,39 @@ def build_money_flow_summary(year, all_records, available_years):
     revenue = build_top_bottom_groups_money_flow(revenue_aggregated)
     expenditure = build_top_bottom_groups_money_flow(expense_aggregated)
 
+    def parse_amount(value):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    reported_totals = None
+    if reported_totals_by_year:
+        reported_totals = (
+            reported_totals_by_year.get(str(year))
+            or reported_totals_by_year.get(year)
+        )
+
+    reported_revenue = None
+    reported_expense = None
+    if isinstance(reported_totals, dict):
+        reported_revenue = parse_amount(reported_totals.get("reported_revenue_total"))
+        reported_expense = parse_amount(reported_totals.get("reported_expense_total"))
+
+    revenue["lineItemTotal"] = revenue["total"]
+    if reported_revenue is not None:
+        revenue["reportedTotal"] = reported_revenue
+
+    expenditure["lineItemTotal"] = expenditure["total"]
+    if reported_expense is not None:
+        expenditure["reportedTotal"] = reported_expense
+
     balance_amount = revenue["total"] - expenditure["total"]
+    reported_balance_amount = (
+        reported_revenue - reported_expense
+        if reported_revenue is not None and reported_expense is not None
+        else None
+    )
 
     return {
         "year": year,
@@ -335,7 +384,20 @@ def build_money_flow_summary(year, all_records, available_years):
         "balance": {
             "amount": balance_amount,
             "isSurplus": balance_amount >= 0,
-            "percentageOfRevenue": (balance_amount / revenue["total"] * 100) if revenue["total"] > 0 else 0
+            "percentageOfRevenue": (balance_amount / revenue["total"] * 100) if revenue["total"] > 0 else 0,
+            "reported": (
+                {
+                    "amount": reported_balance_amount,
+                    "isSurplus": reported_balance_amount >= 0,
+                    "percentageOfRevenue": (
+                        (reported_balance_amount / reported_revenue * 100)
+                        if reported_revenue
+                        else 0
+                    )
+                }
+                if reported_balance_amount is not None
+                else None
+            )
         },
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
@@ -939,6 +1001,15 @@ def main():
 
     # Load full datasets for aggregation
     financial_records = load_json_list(financial_path, "Financial return")
+    financial_totals_path = processed_dir / "financial_return_totals.json"
+    financial_totals = load_json_object(financial_totals_path, "Financial return totals", required=False)
+    financial_totals_by_year = {}
+    if isinstance(financial_totals, dict):
+        totals_years = financial_totals.get("years")
+        if isinstance(totals_years, dict):
+            for year_key, totals in totals_years.items():
+                if isinstance(totals, dict):
+                    financial_totals_by_year[year_key] = totals
     operating_records = load_json_list(operating_path, "Operating budget")
     capital_records = load_json_list(capital_json_path, "Capital budget")
 
@@ -1021,7 +1092,12 @@ def main():
     money_flow_gold_dir.mkdir(parents=True, exist_ok=True)
     for year in financial_years:
         print(f"  Generating money-flow summary for {year}...")
-        summary = build_money_flow_summary(year, financial_records, financial_years)
+        summary = build_money_flow_summary(
+            year,
+            financial_records,
+            financial_years,
+            reported_totals_by_year=financial_totals_by_year
+        )
         gold_path = money_flow_gold_dir / f"{year}.json"
         with open(gold_path, "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2)

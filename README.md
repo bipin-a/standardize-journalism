@@ -99,6 +99,14 @@ Summarizes how money comes in and goes out of the city budget:
 - Top and bottom 7 spending categories
 - Surplus or deficit balance
 
+#### Money Flow Caveats
+The Financial Information Return (FIR) mixes annual flows with balance-sheet rollups (e.g., "Accumulated Surplus", "Continuity of...", and PLUS/LESS totals).
+We explicitly filter those rows to avoid double-counting. This is why raw totals can drop significantly after filtering.
+We also extract the FIR summary totals (PLUS: Total Revenues / LESS: Total Expenses) into a separate `financial_return_totals.json` file and surface them as
+`reportedTotal` fields alongside the line-item sums. The UI uses FIR reported totals for the headline figures when available; the breakdown uses line-item
+totals, and the gap is shown as reconciliation items.
+The Money Flow UI includes a short explainer describing the reconciliation gap (consolidation/deferral/transfer adjustments) without inventing amounts.
+
 ### 4. Council Decisions (Governance) (ETL)
 Tracks recent council activity and lobbying context:
 

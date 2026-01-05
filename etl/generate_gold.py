@@ -46,6 +46,16 @@ def main():
     # Load datasets
     print("Loading processed files...")
     financial_records = load_json_list(financial_path, "Financial return")
+    financial_totals_path = processed_dir / "financial_return_totals.json"
+    financial_totals = None
+    if financial_totals_path.exists():
+        with open(financial_totals_path, "r", encoding="utf-8") as handle:
+            financial_totals = json.load(handle)
+    financial_totals_by_year = {}
+    if isinstance(financial_totals, dict):
+        totals_years = financial_totals.get("years")
+        if isinstance(totals_years, dict):
+            financial_totals_by_year = totals_years
     capital_records = load_json_list(capital_path, "Capital budget")
     council_records = load_json_list(council_path, "Council voting")
     lobbyist_records = load_json_list(lobbyist_path, "Lobbyist registry")
@@ -66,7 +76,12 @@ def main():
     money_flow_gold_dir.mkdir(parents=True, exist_ok=True)
     for year in financial_years:
         print(f"  Generating money-flow summary for {year}...")
-        summary = build_money_flow_summary(year, financial_records, financial_years)
+        summary = build_money_flow_summary(
+            year,
+            financial_records,
+            financial_years,
+            reported_totals_by_year=financial_totals_by_year
+        )
         gold_path = money_flow_gold_dir / f"{year}.json"
         with open(gold_path, "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2)
