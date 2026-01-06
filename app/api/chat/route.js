@@ -10,17 +10,18 @@ import { checkRateLimit } from '../_lib/rate-limiter'
 import { buildContext } from '../_lib/context-builder'
 import { getLLMProvider } from '../_lib/llm-providers'
 import { buildNarrativeEnvelope, buildToolEnvelope } from '../_lib/response-builder'
+import { executeTool } from '../_lib/tool-executor'
 
 // Force server-side execution (no edge runtime)
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic' // No caching for chat
 
 // System prompt that enforces data boundaries
-const SYSTEM_PROMPT_OVERVIEW = `You are a helpful assistant for the Toronto Money Flow dashboard. Your role is to answer questions ONLY using the provided data summaries.
+const SYSTEM_PROMPT_OVERVIEW = `You are a helpful assistant for the Toronto Money Flow dashboard. Your role is to answer questions ONLY using the provided data summaries (or provided web source excerpts when available).
 
 STRICT RULES:
-1. ONLY answer questions that can be answered from the provided data
-2. If the data doesn't contain the answer, politely say: "I don't have that information in the available data. I can only answer questions about Toronto's budget, capital spending, and council decisions for the years I have data for."
+1. ONLY answer questions that can be answered from the provided data or web excerpts
+2. If the data doesn't contain the answer, politely say: "I don't have that information in the available sources. If you have a link to an official page, share it and I can check it."
 3. Keep answers concise (2-3 sentences maximum)
 4. Always mention which data source you used (money flow, capital projects, or council decisions)
 5. If asked about a specific year and that year is not in the data, say: "I only have data for [list available years]"
@@ -39,20 +40,172 @@ Good: "According to the capital projects data, Ward 10 received $71M..."
 Bad: "Ward 10 usually gets a lot of funding..."
 `
 
-const SYSTEM_PROMPT_DETAIL = `You are a helpful assistant for the Toronto Money Flow dashboard. You are answering DETAILED questions based on filtered municipal records.
+const SYSTEM_PROMPT_DETAIL = `You are a helpful assistant for the Toronto Money Flow dashboard. You are answering DETAILED questions based on filtered municipal records or provided web excerpts.
 
 STRICT RULES:
-1. Summarize the results - do not list all records verbatim
-2. Highlight the top 3-5 items by size or relevance
+1. When the user asks about a COUNCILLOR's voting record or what they voted for/against:
+   - ALWAYS list ALL motions they voted NO on (this is critical journalism data)
+   - Clearly distinguish between "how the councillor voted" vs "how the motion outcome" (passed/failed)
+   - If the councillor voted NO on 7 motions, list ALL 7, not "the most notable ones"
+2. For other queries, summarize and highlight the top 3-5 items
 3. Include totals and counts when possible
 4. If the filtered results are empty, say: "I don't have matching records for that request."
-5. Always mention which dataset and year you used (call out if it’s the most recent year with matches)
+5. Always mention which dataset and year you used (call out if it's the most recent year with matches)
 6. Format currency values as CAD with billions (B) or millions (M)
-7. Keep answers concise (2-4 sentences)
+7. IMPORTANT: "Councillor voted Yes/No" is DIFFERENT from "motion passed/failed"
+   - "Voted No" = the councillor's personal vote
+   - "Motion passed/failed" = the overall council outcome
+   - Do NOT conflate these metrics
 
 AUDIENCE:
 Use clear, teen-friendly language without jargon.
 `
+
+const SYSTEM_PROMPT_WEB = `You are a helpful assistant for the Toronto Money Flow dashboard. You are answering questions using ONLY the provided web source excerpts.
+
+STRICT RULES:
+1. Use only the provided web excerpts; do not add outside knowledge.
+2. If the excerpts do not answer the question, say: "I couldn't find that detail in the official sources I checked."
+3. Keep answers concise (2-4 sentences).
+4. Mention that the answer is based on official sources.
+5. Do not speculate.
+`
+
+const NO_ANSWER_PHRASES = [
+  "i don't have that information",
+  'i do not have that information',
+  "i don't have matching records",
+  "i couldn't find any relevant data",
+  "i could not find any relevant data",
+  "i couldn't find that detail",
+  "i could not find that detail",
+  "i couldn't access official sources",
+  "i could not access official sources"
+]
+
+const FOLLOW_UP_HINTS = [
+  'tell me more',
+  'more about',
+  'what about',
+  'can you expand',
+  'why is that',
+  'how does that',
+  'can you explain'
+]
+
+const isNoAnswerResponse = (answer = '') => {
+  const text = String(answer || '').toLowerCase()
+  if (!text) return false
+  return NO_ANSWER_PHRASES.some((phrase) => text.includes(phrase))
+}
+
+const isFollowUpMessage = (message = '') => {
+  const text = String(message).toLowerCase()
+  if (!text) return false
+  if (text.length <= 40) return true
+  return FOLLOW_UP_HINTS.some((hint) => text.includes(hint))
+}
+
+const buildWebLookupQuery = (message, history = []) => {
+  if (!history.length || !isFollowUpMessage(message)) {
+    return message
+  }
+  const lastUser = [...history].reverse().find((entry) => entry.role === 'user')
+  if (!lastUser?.content) {
+    return message
+  }
+  return `${message}\n\nPrevious question: ${lastUser.content}`
+}
+
+const buildWebLookupResponse = async ({
+  message,
+  history,
+  toolResult,
+  toolRouting,
+  toolRoutingConfidence,
+  startTime
+}) => {
+  const webContext = toolResult?.result?.context || ''
+  if (!webContext) {
+    const answer = toolResult?.failureReason === 'rate_limited'
+      ? "I've reached the web lookup limit for this conversation. Please try again later."
+      : "I couldn't access official sources right now. If you have a link, share it and I can check it."
+    return {
+      status: 200,
+      body: {
+        answer,
+        response: buildNarrativeEnvelope({
+          summary: answer,
+          sources: toolResult?.sources || [],
+          ragStrategy: 'web',
+          dataTypes: ['web'],
+          year: null
+        }),
+        sources: toolResult?.sources || [],
+        metadata: {
+          processingTime: Date.now() - startTime,
+          retrievalType: 'tool',
+          tool: 'web_lookup',
+          toolRouting: toolRouting || 'heuristic',
+          toolRoutingConfidence,
+          failureReason: toolResult?.failureReason,
+          failureDetail: toolResult?.failureDetail,
+          webFallback: toolRouting === 'fallback'
+        }
+      }
+    }
+  }
+
+  let provider
+  try {
+    provider = getLLMProvider()
+  } catch (providerError) {
+    console.error('LLM provider initialization error:', providerError)
+    return {
+      status: 503,
+      body: {
+        error: 'Chat service is temporarily unavailable. Please try again later.',
+        type: 'CONFIG_ERROR'
+      }
+    }
+  }
+
+  const response = await provider.chat({
+    systemPrompt: SYSTEM_PROMPT_WEB,
+    context: webContext,
+    message,
+    history
+  })
+
+  const envelope = buildNarrativeEnvelope({
+    summary: response.answer,
+    sources: toolResult?.sources || [],
+    ragStrategy: 'web',
+    dataTypes: ['web'],
+    year: null
+  })
+
+  return {
+    status: 200,
+    body: {
+      answer: response.answer,
+      response: envelope,
+      sources: envelope.sources,
+      metadata: {
+        processingTime: Date.now() - startTime,
+        retrievalType: 'tool',
+        tool: 'web_lookup',
+        toolRouting: toolRouting || 'heuristic',
+        toolRoutingConfidence,
+        usage: response.usage,
+        responseType: envelope.responseType,
+        dataTypes: ['web'],
+        completeness: envelope.completeness,
+        webFallback: toolRouting === 'fallback'
+      }
+    }
+  }
+}
 
 /**
  * POST /api/chat
@@ -64,7 +217,7 @@ export async function POST(request) {
   try {
     // 1. Parse and validate request
     const body = await request.json()
-    const { message, conversationId } = body
+    const { message, conversationId, history: rawHistory } = body
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json({
@@ -96,10 +249,24 @@ export async function POST(request) {
       }, { status: 429 })
     }
 
+    const history = sanitizeHistory(rawHistory)
+
     // 3. Build context from gold summaries
-    const context = await buildContext(message)
+    const context = await buildContext(message, { history, conversationId })
 
     if (context?.retrievalType === 'tool' && context.toolResult) {
+      if (context.toolResult.tool === 'web_lookup') {
+        const webResponse = await buildWebLookupResponse({
+          message,
+          history,
+          toolResult: context.toolResult,
+          toolRouting: context.toolRouting || 'heuristic',
+          toolRoutingConfidence: context.toolRoutingConfidence,
+          startTime
+        })
+        return NextResponse.json(webResponse.body, { status: webResponse.status })
+      }
+
       const envelope = buildToolEnvelope(context.toolResult)
       const result = {
         answer: envelope?.summary || 'Tool response ready.',
@@ -161,7 +328,7 @@ export async function POST(request) {
       const failureDetail = context?.failureDetail || null
       const answer = failureReason === 'no_filtered_records'
         ? "I don't have matching records for that request."
-        : "I couldn't find any relevant data to answer your question. If this should be answerable, the RAG index may need improvement. I can help with questions about Toronto's budget, capital projects, and council decisions."
+        : "I couldn't find any relevant data to answer your question. If you have an official link, share it and I can check it."
       const envelope = buildNarrativeEnvelope({
         summary: answer,
         sources: context?.sources || [],
@@ -244,8 +411,32 @@ export async function POST(request) {
     const response = await provider.chat({
       systemPrompt,
       context: context.data,
-      message
+      message,
+      history
     })
+
+    const retrievalHadNoAnswer = Boolean(context?.noAnswer) || Number(context?.resultsCount || 0) === 0
+    if (retrievalHadNoAnswer && isNoAnswerResponse(response.answer)) {
+      try {
+        const toolResult = await executeTool('web_lookup', {
+          query: buildWebLookupQuery(message, history),
+          message,
+          history,
+          conversationId
+        })
+        const webResponse = await buildWebLookupResponse({
+          message,
+          history,
+          toolResult,
+          toolRouting: 'fallback',
+          toolRoutingConfidence: 0.45,
+          startTime
+        })
+        return NextResponse.json(webResponse.body, { status: webResponse.status })
+      } catch (error) {
+        console.warn('Web fallback failed:', error.message)
+      }
+    }
 
     const envelope = buildNarrativeEnvelope({
       summary: response.answer,
@@ -344,6 +535,18 @@ function getClientIdentifier(request) {
 
   // Combine IP and first 50 chars of user-agent
   return `${ip}:${userAgent.slice(0, 50)}`
+}
+
+function sanitizeHistory(raw) {
+  if (!Array.isArray(raw)) return []
+  const cleaned = raw
+    .filter((entry) => entry && typeof entry.content === 'string' && ['user', 'assistant'].includes(entry.role))
+    .map((entry) => ({
+      role: entry.role,
+      content: entry.content.trim().slice(0, 1000)
+    }))
+    .filter((entry) => entry.content.length > 0)
+  return cleaned.slice(-8)
 }
 
 /**

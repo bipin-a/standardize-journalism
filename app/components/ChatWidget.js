@@ -17,6 +17,7 @@ export default function ChatWidget({ mode = 'floating' }) {
 
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+  const MAX_HISTORY_ITEMS = 8
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -29,6 +30,14 @@ export default function ChatWidget({ mode = 'floating' }) {
       inputRef.current.focus()
     }
   }, [isOpen])
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto'
+      inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 120) + 'px'
+    }
+  }, [inputValue])
 
   const handleSendMessage = async (messageText) => {
     const trimmed = messageText.trim()
@@ -49,6 +58,14 @@ export default function ChatWidget({ mode = 'floating' }) {
     setIsLoading(true)
 
     try {
+      const history = messages
+        .filter((msg) => !msg.isError)
+        .slice(-MAX_HISTORY_ITEMS)
+        .map((msg) => ({
+          role: msg.isUser ? 'user' : 'assistant',
+          content: msg.text
+        }))
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -56,7 +73,8 @@ export default function ChatWidget({ mode = 'floating' }) {
         },
         body: JSON.stringify({
           message: trimmed,
-          conversationId
+          conversationId,
+          history
         })
       })
 
@@ -211,15 +229,15 @@ export default function ChatWidget({ mode = 'floating' }) {
         )}
 
         <form onSubmit={handleSubmit} style={styles.inputForm}>
-          <input
+          <textarea
             ref={inputRef}
-            type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask a question..."
             disabled={isLoading}
             maxLength={500}
+            rows={1}
             style={styles.input}
           />
           <button
@@ -443,7 +461,12 @@ const styles = {
     fontSize: '14px',
     fontFamily: 'inherit',
     outline: 'none',
-    transition: 'border-color 0.2s ease'
+    transition: 'border-color 0.2s ease, height 0.1s ease',
+    resize: 'none',
+    overflow: 'hidden',
+    minHeight: '44px',
+    maxHeight: '120px',
+    lineHeight: '1.4'
   },
 
   sendButton: {

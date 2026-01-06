@@ -3,7 +3,10 @@ const DEFAULT_GCS_BASE_URL = 'https://storage.googleapis.com/standardize-journal
 const normalizeBaseUrl = (baseUrl) => baseUrl.replace(/\/+$/, '')
 
 export const getGcsBaseUrl = () => {
-  const baseUrl = process.env.GCS_BASE_URL || DEFAULT_GCS_BASE_URL
+  // Use explicit undefined check to allow empty string to disable remote fetching
+  const baseUrl = process.env.GCS_BASE_URL !== undefined 
+    ? process.env.GCS_BASE_URL 
+    : DEFAULT_GCS_BASE_URL
   return normalizeBaseUrl(baseUrl)
 }
 

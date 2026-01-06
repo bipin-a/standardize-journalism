@@ -6,6 +6,16 @@
  * Anthropic Claude Provider
  * Uses Claude 3.5 Sonnet by default
  */
+const normalizeHistory = (history = []) => {
+  if (!Array.isArray(history)) return []
+  return history
+    .filter((item) => item && typeof item.content === 'string' && ['user', 'assistant'].includes(item.role))
+    .map((item) => ({
+      role: item.role,
+      content: item.content
+    }))
+}
+
 class AnthropicProvider {
   constructor() {
     this.apiKey = process.env.ANTHROPIC_API_KEY
@@ -17,8 +27,12 @@ class AnthropicProvider {
     }
   }
 
-  async chat({ systemPrompt, context, message }) {
+  async chat({ systemPrompt, context, message, history = [] }) {
     try {
+      const priorMessages = normalizeHistory(history)
+      const userContent = context
+        ? `Context:\n${context}\n\nQuestion: ${message}`
+        : `Question: ${message}`
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -32,13 +46,10 @@ class AnthropicProvider {
           temperature: 0.3, // Lower temperature for factual responses
           system: systemPrompt,
           messages: [
+            ...priorMessages,
             {
               role: 'user',
-              content: `Here is the available Toronto data:
-
-${context}
-
-Question: ${message}`
+              content: userContent
             }
           ]
         })
@@ -80,8 +91,12 @@ class OpenAIProvider {
     }
   }
 
-  async chat({ systemPrompt, context, message }) {
+  async chat({ systemPrompt, context, message, history = [] }) {
     try {
+      const priorMessages = normalizeHistory(history)
+      const userContent = context
+        ? `Context:\n${context}\n\nQuestion: ${message}`
+        : `Question: ${message}`
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -97,9 +112,10 @@ class OpenAIProvider {
               role: 'system',
               content: systemPrompt
             },
+            ...priorMessages,
             {
               role: 'user',
-              content: `Data:\n${context}\n\nQuestion: ${message}`
+              content: userContent
             }
           ]
         })

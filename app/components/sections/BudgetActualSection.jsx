@@ -49,8 +49,7 @@ const BudgetActualSection = ({ year, budgetActual, loading, error }) => {
         City-wide Budget vs Actual (Open Data)
       </div>
       <div style={{ fontSize: '13px', color: '#6b7280', lineHeight: '1.6', marginBottom: '16px' }}>
-        Planned spending comes from the Operating Budget dataset. Actuals come from the Financial Information Return (money flow).
-        This is city-wide and not a line-by-line comparison.
+        Planned (Operating Budget) vs actual (FIR), city-wide only.
       </div>
 
       {loading && (

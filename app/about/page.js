@@ -236,7 +236,7 @@ export default function AboutPage() {
           City Budget Glossary
         </div>
         <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '16px' }}>
-          Short definitions for common budget terms in the revenue and spending lists.
+          Definitions and context for common budget terms in the revenue and spending lists.
         </div>
         <div>
           {CITY_BUDGET_GLOSSARY.map(entry => (
@@ -247,6 +247,11 @@ export default function AboutPage() {
               <div style={{ fontSize: '12px', color: '#6b7280', lineHeight: '1.6' }}>
                 {entry.definition}
               </div>
+              {entry.details && (
+                <div style={{ marginTop: '6px', fontSize: '12px', color: '#4b5563', lineHeight: '1.6' }}>
+                  {entry.details}
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -17,8 +17,10 @@ Rules:
 - compare_years requires at least 2 years.
 - get_motion_details should include motionId if present, otherwise titleContains.
 - If the user asks to list/show records or projects (detail listing), do NOT select a tool.
-- Only select a tool for computed metrics (count/sum/compare/top/procurement totals) or motion details.
-- If the question is descriptive or exploratory, return tool=null.
+- If the user asks about a specific councillor's voting record/pattern (what they voted on, supported, opposed), do NOT select a tool - return null to let the RAG system handle it.
+- Only select a tool for computed metrics (count/sum/compare/top/procurement totals), motion details, glossary definitions, or web lookups.
+- Prefer glossary_lookup for definitions of budget terms. Use web_lookup for background/details on a program, strategy, plan, or policy (e.g., "tell me more about..."), or when the user asks for official web information or provides a URL.
+- If the question is descriptive or exploratory and does not need web lookup, return tool=null.
 
 Tool selection guide:
 - count_records: "how many", "count", "number of" for council meetings/motions or lobbyist activity.
@@ -29,6 +31,8 @@ Tool selection guide:
 - top_k: "top N", "highest", "biggest" rankings.
 - procurement_metrics: procurement totals or concentration.
 - get_motion_details: specific motion ID or title.
+- glossary_lookup: definition/meaning of a budget term or line item.
+- web_lookup: fetch official info from allowlisted government sites when asked to look online or given a URL.
 
 Dataset hints:
 - capital: wards, capital projects, infrastructure.
@@ -45,6 +49,7 @@ Parameter rules:
 - top_k: include dataset + groupBy + metric; include year if specified.
 - procurement_metrics: include year if specified (mode optional).
 - get_motion_details: include motionId if present, else titleContains.
+- web_lookup: include url if the user provides one; otherwise include a query.
 
 Examples (JSON only):
 Q: "Show me transit projects in Ward 10"
@@ -67,6 +72,22 @@ Q: "What's the council pass rate?"
 A: {"tool": "council_metrics", "params": {"metric": "pass_rate"}, "confidence": 0.8}
 Q: "Total capital spending in Ward 10 in 2024"
 A: {"tool": "sum_amount", "params": {"dataset": "capital", "years": [2024], "filters": {"ward": 10}}, "confidence": 0.8}
+Q: "What is the Vacant Home Tax?"
+A: {"tool": "glossary_lookup", "params": {"term": "Vacant Home Tax"}, "confidence": 0.9}
+Q: "Look this up on toronto.ca: https://www.toronto.ca/..."
+A: {"tool": "web_lookup", "params": {"url": "https://www.toronto.ca/..."}, "confidence": 0.7}
+Q: "Find the official page for the TransformTO action plan"
+A: {"tool": "web_lookup", "params": {"query": "TransformTO action plan"}, "confidence": 0.6}
+Q: "Tell me more about TransformTO Net Zero Strategy"
+A: {"tool": "web_lookup", "params": {"query": "TransformTO Net Zero Strategy"}, "confidence": 0.6}
+Q: "Who is Gord Perks?"
+A: {"tool": "web_lookup", "params": {"query": "Toronto City Councillor Gord Perks"}, "confidence": 0.7}
+Q: "What motions did Jamaal Myers vote on?"
+A: {"tool": null, "params": {}, "confidence": 0}
+Q: "Show me councillor Brad Bradford's voting record"
+A: {"tool": null, "params": {}, "confidence": 0}
+Q: "Which motions did Paula Fletcher oppose?"
+A: {"tool": null, "params": {}, "confidence": 0}
 
 Tool catalog:
 `
@@ -246,6 +267,12 @@ const validateToolCall = (toolName, params, confidence) => {
     }
   }
 
+  if (toolName === 'web_lookup') {
+    if (!cleanedParams.query && !cleanedParams.url) {
+      return null
+    }
+  }
+
   return {
     tool: toolName,
     params: cleanedParams,
@@ -253,15 +280,17 @@ const validateToolCall = (toolName, params, confidence) => {
   }
 }
 
-export const routeToolWithLLM = async (message) => {
+export const routeToolWithLLM = async (message, options = {}) => {
   try {
     const provider = getLLMProvider()
     const toolCatalog = buildToolCatalog()
+    const history = Array.isArray(options.history) ? options.history : []
 
     const response = await provider.chat({
       systemPrompt: TOOL_ROUTER_PROMPT + JSON.stringify(toolCatalog, null, 2),
       context: '',
-      message
+      message,
+      history
     })
 
     const payload = extractJsonPayload(response.answer)

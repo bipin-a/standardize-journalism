@@ -11,18 +11,22 @@ import {
 } from './gcs-urls'
 import { semanticSearch } from './rag-retriever'
 import { parseEntities, hasDetailEntities } from './entity-parser'
-import { retrieveDetailData, inferQueryType } from './processed-retriever'
+import { retrieveDetailData, inferQueryType, getCouncilCouncillorNames } from './processed-retriever'
 import { loadProcessedFile } from './data-loader'
 import { executeTool } from './tool-executor'
 import { routeToolWithLLM } from './tool-router'
+import { extractEntitiesWithLLM } from './entity-llm-extractor'
+import { canonicalizeCouncillorName } from './councillor-canonicalizer'
 
 // Year extraction pattern
+// Mechanical extraction patterns - for structured data only
 const YEAR_PATTERN = /\b(20\d{2})\b/g
 const MULTI_YEAR_PATTERN = /\b(?:last|past|previous)\s+(\d+)\s+years?\b/i
 const COUNCIL_KEYWORDS = ['council', 'motion', 'motions', 'vote', 'votes', 'decision', 'decisions', 'meeting', 'meetings', 'councillor']
 const MOTION_ID_PATTERN = /\b[A-Z]{1,3}\d+\.\d+\b/i
 const MOTION_TITLE_HINT_PATTERN = /\b(motion|agenda item|agenda|council motion)\b/i
 const RECENT_KEYWORDS = ['recent', 'recently', 'latest', 'most recent']
+const GLOSSARY_QUERY_PATTERN = /\b(what is|define|meaning of|what does .* mean|explain)\b/i
 const MOTION_TITLE_PATTERNS = [
   /\b(?:motion|agenda item)\s+(?:titled|called|about|on|regarding)\s+(.+)/i,
   /\b(?:motion|agenda item)\s*:\s*(.+)/i,
@@ -67,10 +71,99 @@ async function loadJsonWithFallback(url, localPath, label) {
  * - Overview queries -> embeddings over gold summaries
  * - If nothing matches, return a no-answer context (fail closed)
  */
-export async function buildContext(message) {
-  const entities = parseEntities(message)
+export async function buildContext(message, options = {}) {
+  const history = Array.isArray(options.history) ? options.history : []
+  const conversationId = options.conversationId || null
+  let entities = parseEntities(message)
+
+  // Entity enhancement:
+  // - Keep ward/year regex extraction (fast, reliable)
+  // - Canonicalize councillor names using processed council voting data
+  // - If extraction is uncertain, use an LLM to extract structured entities
+  const queryTypeHint = inferQueryType(message)
+  const isCouncilLike = queryTypeHint === 'council' || isCouncilQuestion(message)
+
+  if (isCouncilLike) {
+    const { names: councillorCandidates } = await getCouncilCouncillorNames(entities.year)
+
+    if (entities.councillor) {
+      const canonical = canonicalizeCouncillorName(entities.councillor, councillorCandidates)
+      if (canonical) {
+        entities = { ...entities, councillor: canonical }
+      }
+    }
+
+    const lower = String(message || '').toLowerCase()
+    const looksLikeVotingByPerson =
+      lower.includes('vote') ||
+      lower.includes('voted') ||
+      lower.includes('support') ||
+      lower.includes('oppose') ||
+      lower.includes('opposed') ||
+      lower.includes('councillor')
+
+    const missingKeyEntities = !entities.councillor && !entities.category && !entities.program && !entities.keyword && !entities.ward
+
+    if (looksLikeVotingByPerson && missingKeyEntities) {
+      try {
+        const llmEntities = await extractEntitiesWithLLM({ message, history })
+        if (llmEntities) {
+          const merged = {
+            ...entities,
+            // Keep deterministic ward/year when present
+            ward: entities.ward ?? llmEntities.ward,
+            year: entities.year ?? llmEntities.year,
+            category: entities.category ?? llmEntities.category,
+            program: entities.program ?? llmEntities.program,
+            councillor: entities.councillor ?? llmEntities.councillor,
+            keyword: entities.keyword ?? llmEntities.keyword
+          }
+
+          if (merged.councillor) {
+            const canonical = canonicalizeCouncillorName(merged.councillor, councillorCandidates)
+            merged.councillor = canonical || merged.councillor
+            // Keyword is usually harmful when a councillor is present.
+            merged.keyword = null
+          }
+
+          entities = merged
+        }
+      } catch (error) {
+        console.warn('LLM entity extraction failed, continuing:', error.message)
+      }
+    }
+
+    if (entities.councillor) {
+      entities = { ...entities, keyword: null }
+    }
+  } else {
+    const missingKeyEntities = !entities.category && !entities.program && !entities.keyword && !entities.ward && !entities.councillor
+    if (missingKeyEntities && String(message || '').trim().length >= 24) {
+      try {
+        const llmEntities = await extractEntitiesWithLLM({ message, history })
+        if (llmEntities) {
+          entities = {
+            ...entities,
+            ward: entities.ward ?? llmEntities.ward,
+            year: entities.year ?? llmEntities.year,
+            category: entities.category ?? llmEntities.category,
+            program: entities.program ?? llmEntities.program,
+            councillor: entities.councillor ?? llmEntities.councillor,
+            keyword: entities.keyword ?? llmEntities.keyword
+          }
+        }
+      } catch (error) {
+        console.warn('LLM entity extraction failed, continuing:', error.message)
+      }
+    }
+  }
   const executeToolCall = async (toolName, params, routing, confidence) => {
-    const toolResult = await executeTool(toolName, { ...params, message })
+    const toolResult = await executeTool(toolName, {
+      ...params,
+      message,
+      history,
+      conversationId
+    })
     return {
       retrievalType: 'tool',
       tool: toolName,
@@ -80,7 +173,7 @@ export async function buildContext(message) {
     }
   }
 
-  const llmTool = await routeToolWithLLM(message)
+  const llmTool = await routeToolWithLLM(message, { history })
   if (llmTool) {
     try {
       return await executeToolCall(llmTool.tool, llmTool.params, 'llm', llmTool.confidence)
@@ -89,8 +182,39 @@ export async function buildContext(message) {
     }
   }
 
+  if (GLOSSARY_QUERY_PATTERN.test(message)) {
+    try {
+      const glossaryResult = await executeToolCall('glossary_lookup', { term: message }, 'heuristic', 1)
+      if (glossaryResult?.toolResult?.result) {
+        return glossaryResult
+      }
+    } catch (error) {
+      console.warn('Glossary lookup failed, falling back:', error.message)
+    }
+  }
+
   const motionContext = await buildMotionDetailContext(message)
   if (motionContext) {
+    // If user asks "why" and motion failed, enrich with web context
+    const asksWhy = /\bwhy\b|\breason\b|\bhow come\b/i.test(message)
+    if (asksWhy && motionContext.motionOutcome === 'failed') {
+      try {
+        const motionTitle = motionContext.motionTitle || 'motion'
+        const webResult = await executeTool('web_lookup', {
+          query: `toronto council "${motionTitle}" meeting minutes`,
+          message,
+          history,
+          conversationId
+        })
+        if (webResult?.result?.context) {
+          motionContext.data += `\n\n--- Additional Context from Official Sources ---\n${webResult.result.context.slice(0, 2000)}`
+          motionContext.sources.push(...(webResult.sources || []))
+        }
+      } catch (error) {
+        // Web lookup failed, continue with basic motion details
+        console.warn('Web lookup for motion context failed:', error.message)
+      }
+    }
     return motionContext
   }
 
@@ -105,7 +229,8 @@ export async function buildContext(message) {
       ? { ...entities, keyword: null }
       : entities
     const detailResult = await retrieveDetailData(detailEntities, queryType)
-    const results = detailResult.results || []
+    const detail = detailResult.results || { items: [], totalCount: 0 }
+    const results = Array.isArray(detail) ? detail : (detail.items || [])
     const detailYear = detailResult.actualYear ?? detailResult.year ?? null
     const detailMeta = {
       requestedYear: detailResult.requestedYear ?? null,
@@ -115,7 +240,7 @@ export async function buildContext(message) {
     }
     if (results.length > 0) {
       context = {
-        data: formatDetailResults(results, queryType, detailYear, detailEntities, detailMeta),
+        data: formatDetailResults(detail, queryType, detailYear, detailEntities, detailMeta),
         sources: buildDetailSources(queryType, detailYear),
         dataTypes: [queryType],
         year: detailYear,
@@ -125,6 +250,15 @@ export async function buildContext(message) {
         ...detailMeta
       }
     } else {
+      const webLookup = await attemptWebLookup({
+        message,
+        history,
+        conversationId,
+        failureReason: 'no_filtered_records'
+      })
+      if (webLookup) {
+        return webLookup
+      }
       context = {
         data: '',
         sources: buildDetailSources(queryType, detailYear),
@@ -149,7 +283,8 @@ export async function buildContext(message) {
   }
 
   if (!context) {
-    const searchResults = await semanticSearch(message, 5, 0.65)
+    const queryWithHistory = buildContextualQuery(message, history)
+    const searchResults = await semanticSearch(queryWithHistory, 5, 0.65)
     if (searchResults.chunks.length > 0) {
       context = {
         data: searchResults.chunks.map((chunk) => chunk.text).join('\n\n---\n\n'),
@@ -162,6 +297,15 @@ export async function buildContext(message) {
         resultsCount: searchResults.chunks.length
       }
     } else {
+      const webLookup = await attemptWebLookup({
+        message,
+        history,
+        conversationId,
+        failureReason: searchResults.failureReason
+      })
+      if (webLookup) {
+        return webLookup
+      }
       const failureReason = searchResults.failureReason || 'no_embeddings_hits'
       context = {
         data: '',
@@ -190,6 +334,84 @@ export async function buildContext(message) {
   }
 
   return context
+}
+
+const FOLLOW_UP_HINTS = [
+  'tell me more',
+  'more about',
+  'what about',
+  'can you expand',
+  'why is that',
+  'how does that',
+  'can you explain'
+]
+
+const isFollowUpMessage = (message = '') => {
+  const text = String(message).toLowerCase()
+  if (!text) return false
+  if (text.length <= 40) return true
+  return FOLLOW_UP_HINTS.some((hint) => text.includes(hint))
+}
+
+const buildContextualQuery = (message, history = []) => {
+  if (!history.length || !isFollowUpMessage(message)) {
+    return message
+  }
+  const lastUser = [...history].reverse().find((entry) => entry.role === 'user')
+  const lastAssistant = [...history].reverse().find((entry) => entry.role === 'assistant')
+  const contextParts = []
+  if (lastUser?.content) {
+    contextParts.push(`Previous question: ${lastUser.content}`)
+  }
+  if (lastAssistant?.content) {
+    contextParts.push(`Previous answer: ${lastAssistant.content}`)
+  }
+  if (!contextParts.length) {
+    return message
+  }
+  return `${message}\n\nContext:\n${contextParts.join('\n')}`
+}
+
+const shouldAttemptWebLookup = (message = '') => {
+  const text = String(message || '').trim()
+  if (!text) return false
+  if (text.length < 6) return false
+  // Don't try web lookup for simple greetings
+  if (/^(hi|hello|thanks|thank you|bye)\b/i.test(text)) return false
+  return true
+}
+
+const attemptWebLookup = async ({ message, history, conversationId }) => {
+  if (!shouldAttemptWebLookup(message)) {
+    return null
+  }
+  const query = buildContextualQuery(message, history)
+  try {
+    const webResult = await executeTool('web_lookup', {
+      query,
+      message,
+      history,
+      conversationId
+    })
+    if (!webResult?.result) {
+      return {
+        retrievalType: 'tool',
+        tool: 'web_lookup',
+        toolRouting: 'heuristic',
+        toolRoutingConfidence: 0.7,
+        toolResult: webResult
+      }
+    }
+    return {
+      retrievalType: 'tool',
+      tool: 'web_lookup',
+      toolRouting: 'heuristic',
+      toolRoutingConfidence: 0.7,
+      toolResult: webResult
+    }
+  } catch (error) {
+    return null
+  }
 }
 
 async function loadCouncilTrends() {
@@ -416,6 +638,33 @@ async function buildMotionDetailContext(message) {
     lines.push(`Vote Margin: ${match.vote_margin}`)
   }
 
+  // Add vote breakdown if available
+  if (Array.isArray(match.votes) && match.votes.length > 0) {
+    const yesVotes = match.votes.filter(v => v.vote?.toLowerCase() === 'yes')
+    const noVotes = match.votes.filter(v => v.vote?.toLowerCase() === 'no')
+    const absentVotes = match.votes.filter(v => v.vote?.toLowerCase() === 'absent')
+
+    lines.push('')
+    lines.push('VOTE BREAKDOWN:')
+    if (yesVotes.length > 0) {
+      lines.push(`In Favour (${yesVotes.length}): ${yesVotes.map(v => v.councillor_name).join(', ')}`)
+    }
+    if (noVotes.length > 0) {
+      lines.push(`Against (${noVotes.length}): ${noVotes.map(v => v.councillor_name).join(', ')}`)
+    }
+    if (absentVotes.length > 0) {
+      lines.push(`Absent (${absentVotes.length}): ${absentVotes.map(v => v.councillor_name).join(', ')}`)
+    }
+
+    // Add explanation for failed motions
+    if (match.vote_outcome === 'failed') {
+      const totalPresent = yesVotes.length + noVotes.length
+      const majorityNeeded = Math.floor(totalPresent / 2) + 1
+      lines.push('')
+      lines.push(`This motion failed because it did not receive the required majority. It needed ${majorityNeeded} votes to pass but only received ${yesVotes.length}.`)
+    }
+  }
+
   const sourcePath = year
     ? `${getGcsBaseUrl()}/processed/council-voting/${year}.json`
     : getVotingDataUrl()
@@ -423,15 +672,24 @@ async function buildMotionDetailContext(message) {
   return {
     data: lines.join('\n'),
     sources: [{
-      type: 'council-voting',
+      type: 'Council Decisions (processed)',
+      dataset: 'council',
+      layer: 'processed',
       year: year || null,
       path: sourcePath
+    }, {
+      type: 'API',
+      dataset: 'council',
+      path: '/api/council-decisions'
     }],
     dataTypes: ['council'],
     year: year || null,
     retrievalType: 'rag',
     ragStrategy: 'filters',
-    resultsCount: 1
+    resultsCount: 1,
+    // Expose for "why" web lookup in buildContext
+    motionOutcome: match.vote_outcome || null,
+    motionTitle: agendaTitle
   }
 }
 
@@ -480,21 +738,28 @@ function buildDetailSources(queryType, year) {
 }
 
 function formatDetailResults(results, queryType, year, entities, detailMeta = {}) {
-  if (!results.length) {
+  const detail = Array.isArray(results)
+    ? { items: results, totalCount: results.length, councillorStats: null }
+    : (results || { items: [], totalCount: 0, councillorStats: null })
+  const items = Array.isArray(detail.items) ? detail.items : []
+
+  if (!items.length) {
     return 'No matching records found for this query.'
   }
+
+  const totalCount = Number.isFinite(detail.totalCount) ? detail.totalCount : items.length
 
   const fallbackNote = detailMeta.fellBack ? ' (most recent year with matches)' : ''
   const yearLabel = year ? `${year}${fallbackNote}` : 'latest available year'
 
   if (queryType === 'capital') {
-    const total = results.reduce((sum, item) => sum + (item.amount || 0), 0)
-    const top = results.slice(0, 5)
+    const total = items.reduce((sum, item) => sum + (item.amount || 0), 0)
+    const top = items.slice(0, 5)
     const wardLabel = entities.ward ? `Ward ${entities.ward}` : 'all wards'
     const categoryLabel = entities.category ? `${entities.category} projects` : 'capital projects'
 
     return `CAPITAL PROJECT DETAILS (${yearLabel}):
-Found ${results.length} ${categoryLabel} in ${wardLabel} in ${yearLabel}, totaling ${formatMoney(total)}.
+Found ${items.length} ${categoryLabel} in ${wardLabel} in ${yearLabel}, totaling ${formatMoney(total)}.
 Top projects:
 ${top.map(item =>
   `- ${item.project_name || item.program_name || 'Unknown Project'}: ${formatMoney(item.amount || 0)}`
@@ -502,22 +767,95 @@ ${top.map(item =>
   }
 
   if (queryType === 'council') {
-    const passed = results.filter((item) => item.vote_outcome === 'passed').length
-    const failed = results.filter((item) => item.vote_outcome === 'failed').length
-    const top = results.slice(0, 5)
+    const passed = items.filter((item) => item.vote_outcome === 'passed').length
+    const failed = items.filter((item) => item.vote_outcome === 'failed').length
+
+    // Show different amounts based on query type:
+    // - Councillor queries: show all (user wants voting detail, LLM can filter)
+    // - General queries: show fewer (overview sufficient)
+    const councillorName = entities.councillor
+    const displayLimit = councillorName ? items.length : 10
+    const top = items.slice(0, displayLimit)
+
+    // If filtering by councillor, include their specific vote stats with CLEAR labeling
+    let councillorSummary = ''
+    if (councillorName && detail.councillorStats) {
+      // Use pre-computed stats from all filtered records
+      const { yes, no, absent } = detail.councillorStats
+      councillorSummary = `
+=== ${councillorName.toUpperCase()} VOTING SUMMARY ===
+Total motions participated in: ${totalCount}
+- Councillor voted YES: ${yes} motions
+- Councillor voted NO: ${no} motions  
+- Councillor was ABSENT: ${absent} motions
+Of these ${totalCount} motions, ${passed} passed and ${failed} failed overall.
+NOTE: "Councillor voted X" means how ${councillorName} voted. "Motion passed/failed" means the overall council outcome.`
+    } else if (councillorName) {
+      // Fallback: compute from displayed results only
+      const councillorVotes = { yes: 0, no: 0, absent: 0 }
+      const noVoteMotions = []
+      for (const motion of items) {
+        const votes = Array.isArray(motion.votes) ? motion.votes : []
+        const councillorVote = votes.find(v =>
+          v.councillor_name?.toLowerCase().includes(councillorName.toLowerCase())
+        )
+        if (councillorVote) {
+          const voteType = (councillorVote.final_vote || '').toLowerCase()
+          if (voteType === 'yes') councillorVotes.yes++
+          else if (voteType === 'no') {
+            councillorVotes.no++
+            noVoteMotions.push({
+              id: motion.motion_id,
+              title: motion.motion_title,
+              outcome: motion.vote_outcome
+            })
+          }
+          else councillorVotes.absent++
+        }
+      }
+      councillorSummary = `
+=== ${councillorName.toUpperCase()} VOTING SUMMARY ===
+Total motions participated in: ${totalCount}
+- Councillor voted YES: ${councillorVotes.yes} motions
+- Councillor voted NO: ${councillorVotes.no} motions
+- Councillor was ABSENT: ${councillorVotes.absent} motions
+Of these ${totalCount} motions, ${passed} passed and ${failed} failed overall.
+NOTE: "Councillor voted X" means how ${councillorName} voted. "Motion passed/failed" means the overall council outcome.`
+      
+      // List ALL motions they voted NO on (this is journalism-critical data)
+      if (noVoteMotions.length > 0) {
+        councillorSummary += `
+
+=== COMPLETE LIST OF MOTIONS ${councillorName.toUpperCase()} VOTED AGAINST (${noVoteMotions.length} total) ===
+${noVoteMotions.map((m, i) => `${i + 1}. ${m.title} [${m.id}] - motion ${m.outcome}`).join('\n')}`
+      }
+    }
+
+    // Format top motions with councillor's vote if filtering by councillor
+    const formatMotion = (item) => {
+      let voteInfo = ''
+      if (councillorName && Array.isArray(item.votes)) {
+        const councillorVote = item.votes.find(v =>
+          v.councillor_name?.toLowerCase().includes(councillorName.toLowerCase())
+        )
+        if (councillorVote) {
+          voteInfo = ` [${councillorName} voted: ${councillorVote.final_vote}]`
+        }
+      }
+      return `- ${item.motion_title} (motion ${item.vote_outcome || 'unknown'})${voteInfo}`
+    }
 
     return `COUNCIL VOTE DETAILS (${yearLabel}):
-Found ${results.length} motions in ${yearLabel} (${passed} passed, ${failed} failed).
+Found ${items.length} motions in ${yearLabel} (${passed} passed, ${failed} failed overall).${councillorSummary}
+
 Recent motions:
-${top.map(item =>
-  `- ${item.motion_title} (${item.vote_outcome || 'unknown'})`
-).join('\n')}`
+${top.map(formatMotion).join('\n')}`
   }
 
   if (queryType === 'lobbyist') {
-    const top = results.slice(0, 5)
+    const top = items.slice(0, 5)
     return `LOBBYIST ACTIVITY (${yearLabel}):
-Found ${results.length} activity records in ${yearLabel}.
+Found ${items.length} activity records in ${yearLabel}.
 Examples:
 ${top.map(item =>
   `- ${item.subject_matter || item.subject_category || 'Unknown topic'} (client: ${item.client_name || 'unknown'})`

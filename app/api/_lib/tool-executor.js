@@ -1,6 +1,8 @@
 import { loadProcessedFile, loadTrendsFile } from './data-loader'
 import { applyFilters, resolveYearList } from './tool-helpers'
 import { getProcurementMetrics } from './metric-data'
+import CITY_BUDGET_GLOSSARY from '../../data/city_budget_glossary.json'
+import { lookupWebSources } from './web-lookup'
 
 const MEETING_PATTERN = /\bmeeting(s)?\b/i
 const REGISTRATION_PATTERN = /\bregistration(s)?\b/i
@@ -32,8 +34,128 @@ export async function executeTool(toolName, params) {
       return executeMotionDetails(params)
     case 'council_metrics':
       return executeCouncilMetrics(params)
+    case 'glossary_lookup':
+      return executeGlossaryLookup(params)
+    case 'web_lookup':
+      return executeWebLookup(params)
     default:
       throw new Error(`Unknown tool: ${toolName}`)
+  }
+}
+
+const normalizeGlossaryText = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+
+const findGlossaryEntry = (query) => {
+  const normalized = normalizeGlossaryText(query)
+  if (!normalized) {
+    return null
+  }
+
+  let bestMatch = null
+  let bestLength = 0
+
+  CITY_BUDGET_GLOSSARY.forEach((entry) => {
+    const terms = [entry.term, ...(entry.matches || [])]
+      .map(normalizeGlossaryText)
+      .filter(Boolean)
+    terms.forEach((term) => {
+      if (normalized === term) {
+        if (term.length > bestLength) {
+          bestMatch = entry
+          bestLength = term.length
+        }
+        return
+      }
+      if (normalized.includes(term) && term.length > bestLength) {
+        bestMatch = entry
+        bestLength = term.length
+      }
+    })
+  })
+
+  return bestMatch
+}
+
+const extractGlossaryQuery = (params) => {
+  if (params?.term) {
+    return params.term
+  }
+  const message = params?.message || ''
+  if (!message) return ''
+  return message
+}
+
+async function executeGlossaryLookup(params) {
+  const query = extractGlossaryQuery(params)
+  const entry = findGlossaryEntry(query)
+
+  if (!entry) {
+    return {
+      tool: 'glossary_lookup',
+      dataset: 'glossary',
+      result: null,
+      source: 'glossary',
+      failureReason: 'no_glossary_match',
+      failureDetail: query ? `No glossary match for "${query}".` : 'No glossary query provided.'
+    }
+  }
+
+  return {
+    tool: 'glossary_lookup',
+    dataset: 'glossary',
+    result: {
+      id: entry.id,
+      term: entry.term,
+      definition: entry.definition,
+      details: entry.details || null
+    },
+    sources: entry.sources || [],
+    source: 'glossary'
+  }
+}
+
+const extractUrlFromText = (text = '') => {
+  const match = String(text).match(/https?:\/\/[^\s)]+/i)
+  if (!match) return null
+  return match[0].replace(/[.,)]+$/, '')
+}
+
+async function executeWebLookup(params) {
+  const message = params?.message || ''
+  const query = params?.query || message
+  const url = params?.url || extractUrlFromText(message)
+  const conversationId = params?.conversationId || null
+
+  // Query construction is handled by the tool router LLM
+  // No hardcoded pattern matching for query enhancement
+  const { result, sources, failureReason, failureDetail } = await lookupWebSources({
+    query,
+    url,
+    conversationId
+  })
+
+  if (!result) {
+    return {
+      tool: 'web_lookup',
+      dataset: 'web',
+      result: null,
+      sources: [],
+      source: 'web',
+      failureReason: failureReason || 'web_lookup_failed',
+      failureDetail: failureDetail || 'Web lookup returned no results.'
+    }
+  }
+
+  return {
+    tool: 'web_lookup',
+    dataset: 'web',
+    result,
+    sources,
+    source: 'web'
   }
 }
 
@@ -828,6 +950,31 @@ async function executeMotionDetails(params) {
       const agendaTitle = match.agenda_item_title || match.motion_title || null
       const voteDescription = match.vote_description || null
       const motionText = [agendaTitle, voteDescription].filter(Boolean).join(' — ')
+
+      // Build vote breakdown if available
+      let voteBreakdown = null
+      if (Array.isArray(match.votes) && match.votes.length > 0) {
+        const yesVotes = match.votes.filter(v => (v.final_vote || '').toLowerCase() === 'yes')
+        const noVotes = match.votes.filter(v => (v.final_vote || '').toLowerCase() === 'no')
+        const absentVotes = match.votes.filter(v => {
+          const voteVal = (v.final_vote || '').toLowerCase()
+          return voteVal === 'absent' || voteVal === ''
+        })
+        voteBreakdown = {
+          inFavour: yesVotes.map(v => v.councillor_name),
+          against: noVotes.map(v => v.councillor_name),
+          absent: absentVotes.map(v => v.councillor_name)
+        }
+      }
+
+      // Explain why motion failed
+      let failureExplanation = null
+      if (match.vote_outcome === 'failed' && voteBreakdown) {
+        const totalPresent = voteBreakdown.inFavour.length + voteBreakdown.against.length
+        const majorityNeeded = Math.floor(totalPresent / 2) + 1
+        failureExplanation = `This motion failed because it did not receive the required majority. It needed ${majorityNeeded} votes to pass but only received ${voteBreakdown.inFavour.length}.`
+      }
+
       return {
         tool: 'get_motion_details',
         dataset: 'council',
@@ -840,7 +987,12 @@ async function executeMotionDetails(params) {
           motion_text: motionText || match.motion_title,
           meeting_date: match.meeting_date,
           vote_outcome: match.vote_outcome,
-          vote_margin: match.vote_margin
+          vote_margin: match.vote_margin,
+          yes_votes: match.yes_votes,
+          no_votes: match.no_votes,
+          absent_votes: match.absent_votes,
+          voteBreakdown,
+          failureExplanation
         },
         source: 'processed',
         dataTimestamp: match.ingested_at,

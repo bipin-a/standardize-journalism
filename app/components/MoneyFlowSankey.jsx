@@ -692,7 +692,7 @@ const MoneyFlowSankey = ({
               backgroundColor: COLORS.revenue.primary, 
               borderRadius: '3px' 
             }} />
-            <span style={{ fontSize: '12px', color: '#374151' }}>Revenue (green tones)</span>
+            <span style={{ fontSize: '12px', color: '#374151' }}>Revenue</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ 
@@ -701,7 +701,7 @@ const MoneyFlowSankey = ({
               background: `linear-gradient(135deg, ${COLORS.expense.publicSafety}, ${COLORS.expense.culture})`, 
               borderRadius: '3px' 
             }} />
-            <span style={{ fontSize: '12px', color: '#374151' }}>Spending (warm/cool tones)</span>
+            <span style={{ fontSize: '12px', color: '#374151' }}>Spending</span>
           </div>
           {balanceAmount < 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -712,7 +712,7 @@ const MoneyFlowSankey = ({
                 borderRadius: '3px',
                 backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.3) 2px, rgba(255,255,255,0.3) 4px)'
               }} />
-              <span style={{ fontSize: '12px', color: '#374151' }}>Deficit (red, striped)</span>
+              <span style={{ fontSize: '12px', color: '#374151' }}>Deficit</span>
             </div>
           )}
           {balanceAmount > 0 && (
@@ -723,7 +723,7 @@ const MoneyFlowSankey = ({
                 backgroundColor: COLORS.surplus, 
                 borderRadius: '3px' 
               }} />
-              <span style={{ fontSize: '12px', color: '#374151' }}>Surplus (green)</span>
+              <span style={{ fontSize: '12px', color: '#374151' }}>Surplus</span>
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -734,23 +734,11 @@ const MoneyFlowSankey = ({
               borderRadius: '3px',
               border: `1px solid ${COLORS.poolBorder}`
             }} />
-            <span style={{ fontSize: '12px', color: '#374151' }}>General Fund (central pool)</span>
+            <span style={{ fontSize: '12px', color: '#374151' }}>General Fund</span>
           </div>
         </div>
       </div>
 
-      {/* Accessibility note */}
-      <div style={{ 
-        marginTop: '12px', 
-        fontSize: '11px', 
-        color: '#9ca3af',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px'
-      }}>
-        <span>♿</span>
-        <span>Colors are WCAG AA compliant. Hover or tap for details. Labels pair colors with text for accessibility.</span>
-      </div>
     </div>
   )
 }

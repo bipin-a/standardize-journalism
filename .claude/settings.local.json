@@ -22,7 +22,14 @@
       "WebFetch(domain:secure.toronto.ca)",
       "Bash(git -C /Users/aasibipin/standardize-journalism log --oneline -20)",
       "Bash(git -C /Users/aasibipin/standardize-journalism status --short)",
-      "Bash(du:*)"
+      "Bash(du:*)",
+      "WebFetch(domain:www.toronto.ca)",
+      "WebFetch(domain:www.ontario.ca)",
+      "Bash(node:*)",
+      "Bash(xargs kill:*)",
+      "Bash(PORT=3000 npm run dev:*)",
+      "Bash(grep:*)",
+      "Bash(GCS_BASE_URL= PORT=3000 npm run dev:*)"
     ]
   }
 }

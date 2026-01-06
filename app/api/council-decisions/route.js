@@ -169,17 +169,34 @@ const aggregateCouncillorVoting = (motions) => {
           votes_cast: 0,
           yes_votes: 0,
           no_votes: 0,
-          absent: 0
+          absent: 0,
+          // New fields for amendment/defer/refer tracking
+          tried_to_amend_count: 0,
+          tried_to_defer_count: 0,
+          tried_to_refer_count: 0
         }
       }
 
       councillors[name].votes_cast += 1
-      if (vote.vote === 'Yes') {
+      
+      const voteValue = vote.final_vote
+      if (voteValue === 'Yes') {
         councillors[name].yes_votes += 1
-      } else if (vote.vote === 'No') {
+      } else if (voteValue === 'No') {
         councillors[name].no_votes += 1
       } else {
         councillors[name].absent += 1
+      }
+      
+      // Track amendment/defer/refer attempts (new schema)
+      if (vote.tried_to_amend) {
+        councillors[name].tried_to_amend_count += 1
+      }
+      if (vote.tried_to_defer) {
+        councillors[name].tried_to_defer_count += 1
+      }
+      if (vote.tried_to_refer) {
+        councillors[name].tried_to_refer_count += 1
       }
     }
   }

@@ -157,5 +157,29 @@ export const TOOLS = [
       meetingDate: { type: 'string' },
       titleContains: { type: 'string' }
     }
+  },
+  {
+    name: 'glossary_lookup',
+    description: 'Look up definitions for city budget terms and line items',
+    parameters: {
+      term: {
+        type: 'string',
+        description: 'Term to define (optional; inferred from the question if omitted)'
+      }
+    }
+  },
+  {
+    name: 'web_lookup',
+    description: 'Fetch official public information from allowlisted government sites when local data is missing',
+    parameters: {
+      query: {
+        type: 'string',
+        description: 'Search query or topic to look up'
+      },
+      url: {
+        type: 'string',
+        description: 'Direct URL to fetch (must be on allowlisted domains)'
+      }
+    }
   }
 ]

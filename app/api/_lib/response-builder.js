@@ -17,7 +17,9 @@ const TOOL_RESPONSE_TYPES = {
   council_metrics: 'council_metrics',
   top_k: 'metric_rank',
   procurement_metrics: 'procurement_metrics',
-  get_motion_details: 'motion_detail'
+  get_motion_details: 'motion_detail',
+  glossary_lookup: 'glossary_definition',
+  web_lookup: 'web_lookup'
 }
 
 const DATASET_LABELS = {
@@ -25,7 +27,9 @@ const DATASET_LABELS = {
   'money-flow': 'Money Flow',
   council: 'Council Decisions',
   lobbyist: 'Lobbyist Registry',
-  procurement: 'Procurement'
+  procurement: 'Procurement',
+  glossary: 'Glossary',
+  web: 'Web'
 }
 
 const API_ENDPOINTS = {
@@ -243,6 +247,9 @@ const formatMetricValue = (value, { dataset, metric, tool, flowType }) => {
 
 const buildSources = (toolResult) => {
   const sources = []
+  if (Array.isArray(toolResult.sources) && toolResult.sources.length) {
+    sources.push(...toolResult.sources)
+  }
   const dataSource = buildToolDataSource(toolResult)
   if (dataSource) {
     sources.push(dataSource)
@@ -260,7 +267,7 @@ export const buildToolEnvelope = (toolResult) => {
   }
 
   const responseType = TOOL_RESPONSE_TYPES[toolResult.tool] || 'unknown'
-  const completeness = ['trends', 'processed', 'ckan'].includes(toolResult.source)
+  const completeness = ['trends', 'processed', 'ckan', 'glossary'].includes(toolResult.source)
     ? 'complete'
     : 'preview'
 
@@ -522,9 +529,34 @@ export const buildToolEnvelope = (toolResult) => {
     const title = motion?.agenda_item_title || motion?.motion_title || 'Motion'
     const description = motion?.vote_description
     const descriptionText = description ? ` Vote description: ${description}.` : ''
-    const summary = motion
-      ? `Motion ${motion.motion_id || ''} ${yearLabel}: "${title}". Outcome: ${motion.vote_outcome || 'unknown'}${Number.isFinite(motion.vote_margin) ? ` (margin ${motion.vote_margin})` : ''}.${descriptionText}`
-      : `I could not find that motion ${yearLabel} in the council voting data.`
+
+    let summaryParts = []
+    if (motion) {
+      summaryParts.push(`Motion ${motion.motion_id || ''} ${yearLabel}: "${title}". Outcome: ${motion.vote_outcome || 'unknown'}${Number.isFinite(motion.vote_margin) ? ` (margin ${motion.vote_margin})` : ''}.${descriptionText}`)
+
+      // Add vote breakdown
+      if (motion.voteBreakdown) {
+        const { inFavour, against, absent } = motion.voteBreakdown
+        if (inFavour?.length > 0) {
+          summaryParts.push(`In favour (${inFavour.length}): ${inFavour.join(', ')}.`)
+        }
+        if (against?.length > 0) {
+          summaryParts.push(`Against (${against.length}): ${against.join(', ')}.`)
+        }
+        if (absent?.length > 0) {
+          summaryParts.push(`Absent (${absent.length}): ${absent.join(', ')}.`)
+        }
+      }
+
+      // Add failure explanation
+      if (motion.failureExplanation) {
+        summaryParts.push(motion.failureExplanation)
+      }
+    } else {
+      summaryParts.push(`I could not find that motion ${yearLabel} in the council voting data.`)
+    }
+
+    const summary = summaryParts.join(' ')
 
     return {
       schemaVersion: SCHEMA_VERSION,
@@ -534,6 +566,27 @@ export const buildToolEnvelope = (toolResult) => {
         dataset: 'council',
         year: toolResult.year,
         motion: toolResult.result
+      },
+      completeness,
+      sources: buildSources(toolResult)
+    }
+  }
+
+  if (toolResult.tool === 'glossary_lookup') {
+    const entry = toolResult.result
+    const summary = entry
+      ? `${entry.term}: ${entry.definition}${entry.details ? ` ${entry.details}` : ''}`
+      : 'I could not find that term in the glossary.'
+
+    return {
+      schemaVersion: SCHEMA_VERSION,
+      responseType,
+      summary,
+      structured: {
+        dataset: 'glossary',
+        term: entry?.term || null,
+        definition: entry?.definition || null,
+        details: entry?.details || null
       },
       completeness,
       sources: buildSources(toolResult)

@@ -10,6 +10,7 @@ import { normalizeCategoryFilter } from './data-loader'
 const CACHE_TTL_MS = 5 * 60 * 1000
 const processedCache = new Map()
 const indexCache = new Map()
+const derivedCache = new Map()
 
 const fetchJson = async (url) => {
   const response = await fetch(url, { cache: 'no-store' })
@@ -43,6 +44,44 @@ const loadProcessedFile = async (relativePath) => {
   const data = await readLocalJson(`data/processed/${relativePath}`)
   processedCache.set(cacheKey, { data, timestamp: Date.now() })
   return data
+}
+
+export const getCouncilCouncillorNames = async (yearOverride = null) => {
+  const year = yearOverride ?? await getLatestCouncilYear()
+  if (!year) {
+    return { year: null, names: [] }
+  }
+
+  const cacheKey = `council-councillors:${year}`
+  const cached = derivedCache.get(cacheKey)
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data
+  }
+
+  let data
+  try {
+    data = await loadProcessedFile(`council-voting/${year}.json`)
+  } catch (error) {
+    console.warn(`Council data not available for year ${year}: ${error.message}`)
+    const empty = { year, names: [] }
+    derivedCache.set(cacheKey, { data: empty, timestamp: Date.now() })
+    return empty
+  }
+
+  const names = new Set()
+  for (const record of Array.isArray(data) ? data : []) {
+    const votes = Array.isArray(record?.votes) ? record.votes : []
+    for (const vote of votes) {
+      const name = String(vote?.councillor_name || '').trim()
+      if (name) {
+        names.add(name)
+      }
+    }
+  }
+
+  const result = { year, names: Array.from(names).sort((a, b) => a.localeCompare(b)) }
+  derivedCache.set(cacheKey, { data: result, timestamp: Date.now() })
+  return result
 }
 
 const loadIndex = async (label, url, localPath) => {
@@ -114,7 +153,7 @@ const matchesAnyText = (fields, keyword) =>
 export const searchCapitalProjects = async (entities, yearOverride = null) => {
   const year = yearOverride ?? entities.year ?? await getLatestCapitalYear()
   if (!year) {
-    return []
+    return { items: [], totalCount: 0, year }
   }
 
   let data
@@ -122,13 +161,13 @@ export const searchCapitalProjects = async (entities, yearOverride = null) => {
     data = await loadProcessedFile(`capital-by-ward/${year}.json`)
   } catch (error) {
     console.warn(`Capital data not available for year ${year}: ${error.message}`)
-    return []
+    return { items: [], totalCount: 0, year }
   }
 
   const normalizedCategory = normalizeCategoryFilter(entities.category)
   const normalizedProgram = normalizeCategoryFilter(entities.program)
 
-  return data
+  const filtered = data
     .filter((record) => {
       if (entities.ward && record.ward_number !== entities.ward) return false
       if (normalizedCategory && !matchesAnyText([record.category, record.program_name, record.project_name], normalizedCategory)) return false
@@ -137,13 +176,18 @@ export const searchCapitalProjects = async (entities, yearOverride = null) => {
       return true
     })
     .sort((a, b) => (b.amount || 0) - (a.amount || 0))
-    .slice(0, 50)
+
+  return {
+    items: filtered.slice(0, 50),
+    totalCount: filtered.length,
+    year
+  }
 }
 
 export const searchCouncilVotes = async (entities, yearOverride = null) => {
   const year = yearOverride ?? entities.year ?? await getLatestCouncilYear()
   if (!year) {
-    return []
+    return { items: [], totalCount: 0, councillorStats: null, year }
   }
 
   let data
@@ -151,10 +195,10 @@ export const searchCouncilVotes = async (entities, yearOverride = null) => {
     data = await loadProcessedFile(`council-voting/${year}.json`)
   } catch (error) {
     console.warn(`Council data not available for year ${year}: ${error.message}`)
-    return []
+    return { items: [], totalCount: 0, councillorStats: null, year }
   }
 
-  return data
+  const filtered = data
     .filter((record) => {
       if (entities.category && !matchesAnyText([record.motion_category, record.motion_title], entities.category)) return false
       if (entities.keyword && !matchesText(record.motion_title, entities.keyword)) return false
@@ -166,12 +210,47 @@ export const searchCouncilVotes = async (entities, yearOverride = null) => {
       return true
     })
     .sort((a, b) => String(b.meeting_date || '').localeCompare(String(a.meeting_date || '')))
-    .slice(0, 30)
+
+  // Deduplicate by motion_id (keep first occurrence - most recent date)
+  const seenMotions = new Set()
+  const deduped = filtered.filter((record) => {
+    if (seenMotions.has(record.motion_id)) return false
+    seenMotions.add(record.motion_id)
+    return true
+  })
+
+  let councillorStats = null
+
+  // Compute councillor vote breakdown on ALL filtered records
+  if (entities.councillor) {
+    councillorStats = { yes: 0, no: 0, absent: 0 }
+    for (const motion of deduped) {
+      const votes = Array.isArray(motion.votes) ? motion.votes : []
+      // Find the councillor's vote (data is now clean - one vote per councillor per motion from ETL)
+      const councillorVote = votes.find((vote) => matchesText(vote.councillor_name, entities.councillor))
+
+      if (councillorVote) {
+        const voteType = String(councillorVote.final_vote || '').toLowerCase()
+        if (voteType === 'yes') councillorStats.yes++
+        else if (voteType === 'no') councillorStats.no++
+        else councillorStats.absent++
+      }
+    }
+  }
+
+  // Return all filtered/deduped results - natural bounds from year + councillor filtering
+  // No arbitrary caps needed; realistic max is ~600-750 motions/year/councillor
+  return {
+    items: deduped,
+    totalCount: deduped.length,
+    councillorStats,
+    year
+  }
 }
 
 export const searchLobbyistActivity = async (entities) => {
   if (!entities.year) {
-    return []
+    return { items: [], totalCount: 0, year: null }
   }
 
   let data
@@ -179,10 +258,10 @@ export const searchLobbyistActivity = async (entities) => {
     data = await loadProcessedFile(`lobbyist-registry/${entities.year}.json`)
   } catch (error) {
     console.warn(`Lobbyist data not available for year ${entities.year}: ${error.message}`)
-    return []
+    return { items: [], totalCount: 0, year: entities.year }
   }
 
-  return data
+  const filtered = data
     .filter((record) => {
       if (entities.keyword && !matchesAnyText([
         record.subject_matter,
@@ -193,7 +272,12 @@ export const searchLobbyistActivity = async (entities) => {
       ], entities.keyword)) return false
       return true
     })
-    .slice(0, 30)
+
+  return {
+    items: filtered.slice(0, 30),
+    totalCount: filtered.length,
+    year: entities.year
+  }
 }
 
 export const inferQueryType = (message) => {
@@ -219,7 +303,7 @@ const getAvailableYearsForQueryType = async (queryType) => {
 
 const runDetailSearch = async (entities, queryType, year) => {
   if (!year && queryType === 'lobbyist') {
-    return []
+    return { items: [], totalCount: 0, year: null }
   }
   const scoped = { ...entities, year }
   switch (queryType) {
@@ -252,7 +336,7 @@ export const retrieveDetailData = async (entities, queryType) => {
 
   if (!latestYear) {
     return {
-      results: [],
+      results: { items: [], totalCount: 0, year: null },
       year: null,
       requestedYear: null,
       actualYear: null,
@@ -262,7 +346,7 @@ export const retrieveDetailData = async (entities, queryType) => {
   }
 
   const latestResults = await runDetailSearch(entities, queryType, latestYear)
-  if (latestResults.length) {
+  if ((latestResults?.items || []).length) {
     return {
       results: latestResults,
       year: latestYear,
@@ -280,7 +364,7 @@ export const retrieveDetailData = async (entities, queryType) => {
   for (const year of fallbackYears) {
     // eslint-disable-next-line no-await-in-loop
     const results = await runDetailSearch(entities, queryType, year)
-    if (results.length) {
+    if ((results?.items || []).length) {
       return {
         results,
         year,
@@ -293,7 +377,7 @@ export const retrieveDetailData = async (entities, queryType) => {
   }
 
   return {
-    results: [],
+    results: { items: [], totalCount: 0, year: latestYear },
     year: latestYear,
     requestedYear: null,
     actualYear: latestYear,

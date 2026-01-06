@@ -3,6 +3,21 @@
     "id": "general-assistance",
     "term": "General Assistance",
     "definition": "Provincial social assistance programs administered by the City (e.g., Ontario Works and related benefits).",
+    "details": "Who: City divisions and community partners. What/How: operating costs to deliver social supports, housing, health, or child care services, including staffing, benefits, and program delivery. Why/Where: supports residents across Toronto and is reported in the FIR for the fiscal year. Legal basis: Ontario Works Act, 1997.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Ontario Works (City of Toronto)",
+        "path": "https://www.toronto.ca/community-people/employment-social-support/support-for-people-in-financial-need/assistance-through-ontario-works/"
+      },
+      {
+        "type": "Ontario Works Act, 1997",
+        "path": "https://www.ontario.ca/laws/statute/97o25"
+      }
+    ],
     "matches": [
       "general assistance"
     ]
@@ -11,6 +26,17 @@
     "id": "assistance-to-seniors",
     "term": "Assistance to Seniors",
     "definition": "Programs that support seniors, including housing and income support services.",
+    "details": "Who: City divisions and community partners. What/How: operating costs to deliver social supports, housing, health, or child care services, including staffing, benefits, and program delivery. Why/Where: supports residents across Toronto and is reported in the FIR for the fiscal year.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Seniors services (City of Toronto)",
+        "path": "https://www.toronto.ca/community-people/seniors/"
+      }
+    ],
     "matches": [
       "assistance to seniors"
     ]
@@ -19,6 +45,13 @@
     "id": "taxation-own-purposes",
     "term": "Taxation - Own Purposes",
     "definition": "Municipal taxes set by the City, primarily property taxes and related levies.",
+    "details": "Who: City of Toronto. What/How: property taxes and related municipal levies set by Council and applied to assessed values within Toronto. Why: primary source of municipal operating revenue.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      }
+    ],
     "matches": [
       "taxation - own purposes"
     ]
@@ -27,6 +60,13 @@
     "id": "ontario-conditional-grants",
     "term": "Ontario Conditional Grants",
     "definition": "Provincial transfers earmarked for specific programs or services.",
+    "details": "Who: provincial, federal, or municipal partners. What/How: targeted transfers restricted to eligible programs or capital projects with reporting conditions. Why: funds shared priorities or infrastructure; recognized in the FIR when conditions are met.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      }
+    ],
     "matches": [
       "ontario conditional grants"
     ]
@@ -35,6 +75,13 @@
     "id": "canada-conditional-grants",
     "term": "Canada Conditional Grants",
     "definition": "Federal transfers earmarked for specific programs or services.",
+    "details": "Who: provincial, federal, or municipal partners. What/How: targeted transfers restricted to eligible programs or capital projects with reporting conditions. Why: funds shared priorities or infrastructure; recognized in the FIR when conditions are met.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      }
+    ],
     "matches": [
       "canada conditional grants"
     ]
@@ -43,6 +90,17 @@
     "id": "deferred-revenue-earned",
     "term": "Deferred Revenue Earned",
     "definition": "Revenue previously received but recognized when conditions are met (e.g., development charges).",
+    "details": "Who: City finance reporting. What/How: revenue previously received but deferred until eligibility conditions are met (e.g., development charges or restricted grants). Why: aligns revenue recognition with public-sector accounting rules.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Annual Financial Report (2024)",
+        "path": "https://www.toronto.ca/wp-content/uploads/2025/08/9515-2024-City-of-Toronto-Financial-Report.pdf"
+      }
+    ],
     "matches": [
       "deferred revenue earned"
     ]
@@ -51,6 +109,17 @@
     "id": "municipal-land-transfer-tax",
     "term": "Municipal Land Transfer Tax",
     "definition": "City tax on real estate transactions within Toronto.",
+    "details": "Who: City of Toronto. What/How: tax on the transfer of land or real estate in Toronto, payable on closing through the land registration process; rates set by the Municipal Code. Why: raises municipal revenue alongside the provincial land transfer tax. Legal basis: Toronto Municipal Code Chapter 760.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Municipal Code Ch. 760",
+        "path": "https://www.toronto.ca/legdocs/municode/1184_760.pdf"
+      }
+    ],
     "matches": [
       "municipal land transfer tax"
     ]
@@ -59,6 +128,17 @@
     "id": "investment-income",
     "term": "Investment Income",
     "definition": "Interest and returns on City reserves and investments.",
+    "details": "Who: City treasury. What/How: interest and investment returns on City cash, reserves, and reserve funds. Why: generates revenue while funds are held for future use.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Annual Financial Report (2024)",
+        "path": "https://www.toronto.ca/wp-content/uploads/2025/08/9515-2024-City-of-Toronto-Financial-Report.pdf"
+      }
+    ],
     "matches": [
       "investment income"
     ]
@@ -67,6 +147,13 @@
     "id": "rents-concessions-franchises",
     "term": "Rents, Concessions and Franchises",
     "definition": "Revenue from leases, concessions, and franchise agreements.",
+    "details": "Who: City of Toronto and its tenants or concessionaires. What/How: revenue from leasing City assets, concessions, or franchise agreements. Why: monetizes City-owned assets and rights.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      }
+    ],
     "matches": [
       "rents, concessions and franchises"
     ]
@@ -75,6 +162,17 @@
     "id": "donated-tangible-capital-assets",
     "term": "Donated Tangible Capital Assets",
     "definition": "Non-cash infrastructure or assets contributed to the City.",
+    "details": "Who: developers, partners, or other contributors. What/How: non-cash capital assets contributed to the City (e.g., developer-built infrastructure) recorded at fair value. Why: recognizes in-kind infrastructure added to the City's asset base.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Annual Financial Report (2024)",
+        "path": "https://www.toronto.ca/wp-content/uploads/2025/08/9515-2024-City-of-Toronto-Financial-Report.pdf"
+      }
+    ],
     "matches": [
       "donated tangible capital assets"
     ]
@@ -83,6 +181,21 @@
     "id": "vacant-home-tax",
     "term": "Vacant Home Tax",
     "definition": "Tax on residential properties left vacant.",
+    "details": "Who: City of Toronto. What/How: tax on residential properties declared or deemed vacant for most of the year; owners must file annual occupancy declarations and may qualify for exemptions. Why: encourages housing availability and raises revenue; applied within Toronto under Municipal Code Chapter 778.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Vacant Home Tax program",
+        "path": "https://www.toronto.ca/services-payments/property-taxes-utilities/vacant-home-tax/"
+      },
+      {
+        "type": "Toronto Municipal Code Ch. 778",
+        "path": "https://www.toronto.ca/legdocs/municode/toronto-code-778.pdf"
+      }
+    ],
     "matches": [
       "vacant home tax"
     ]
@@ -91,6 +204,13 @@
     "id": "gaming-casino-revenues",
     "term": "Gaming and Casino Revenues",
     "definition": "City share of revenues from gaming and casino operations.",
+    "details": "Who: City of Toronto, under municipal bylaws or provincial/federal authority. What/How: revenue collected from the relevant tax base, fees, or enforcement activity within Toronto. Why: funds municipal services and is reported in the FIR for the fiscal year.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      }
+    ],
     "matches": [
       "gaming and casino revenues"
     ]
@@ -99,6 +219,13 @@
     "id": "revenue-other-municipalities-capital-assets",
     "term": "Revenue From Other Municipalities for Tangible Capital Assets",
     "definition": "Transfers from other municipalities for shared capital assets or joint projects.",
+    "details": "Who: other municipalities. What/How: transfers or cost-sharing for jointly funded capital assets or shared infrastructure projects. Why: recognizes partner funding for capital works.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      }
+    ],
     "matches": [
       "revenue from other municipalities for tangible capital assets"
     ]
@@ -107,6 +234,17 @@
     "id": "canada-community-building-fund",
     "term": "Canada Community-Building Fund",
     "definition": "Federal transfer (formerly Gas Tax) for infrastructure and community investments.",
+    "details": "Who: Government of Canada. What/How: federal transfer (formerly the Gas Tax Fund) allocated by formula for municipal infrastructure and community investments. Why: funds eligible capital projects and is recognized when conditions are met.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Canada Community-Building Fund",
+        "path": "https://housing-infrastructure.canada.ca/ccbf-fdcc/index-eng.html"
+      }
+    ],
     "matches": [
       "canada community",
       "community - building fund"
@@ -116,6 +254,13 @@
     "id": "canada-grants-capital-assets",
     "term": "Canada Grants for Tangible Capital Assets",
     "definition": "Federal grants for capital assets and infrastructure projects.",
+    "details": "Who: provincial, federal, or municipal partners. What/How: targeted transfers restricted to eligible programs or capital projects with reporting conditions. Why: funds shared priorities or infrastructure; recognized in the FIR when conditions are met.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      }
+    ],
     "matches": [
       "canada grants for tangible capital assets"
     ]
@@ -124,6 +269,13 @@
     "id": "ontario-grants-capital-assets",
     "term": "Ontario Grants for Tangible Capital Assets",
     "definition": "Provincial grants for capital assets and infrastructure projects.",
+    "details": "Who: provincial, federal, or municipal partners. What/How: targeted transfers restricted to eligible programs or capital projects with reporting conditions. Why: funds shared priorities or infrastructure; recognized in the FIR when conditions are met.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      }
+    ],
     "matches": [
       "ontario grants for tangible capital assets"
     ]
@@ -132,6 +284,17 @@
     "id": "contributions-non-consolidated",
     "term": "Contributions From Non-consolidated Entities",
     "definition": "Funding from organizations not included in the City's consolidated financial statements.",
+    "details": "Who: organizations not included in the City's consolidated financial statements. What/How: funding contributions or cost-sharing for City services or projects. Why: recognizes external funding in the City's results.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Annual Financial Report (2024)",
+        "path": "https://www.toronto.ca/wp-content/uploads/2025/08/9515-2024-City-of-Toronto-Financial-Report.pdf"
+      }
+    ],
     "matches": [
       "contributions from non-consolidated entities"
     ]
@@ -140,6 +303,17 @@
     "id": "gain-loss-sale-capital-assets",
     "term": "Gain (Loss) on Sale of Land & Capital Assets",
     "definition": "Net gains or losses from selling land or capital assets.",
+    "details": "Who: City finance reporting. What/How: difference between sale proceeds and the book value of land or capital assets. Why: records the financial impact of asset disposals in the City's statements.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Annual Financial Report (2024)",
+        "path": "https://www.toronto.ca/wp-content/uploads/2025/08/9515-2024-City-of-Toronto-Financial-Report.pdf"
+      }
+    ],
     "matches": [
       "gain (loss) on sale of land & capital assets"
     ]
@@ -148,6 +322,17 @@
     "id": "interest-reserves",
     "term": "Interest Earned on Reserves and Reserve Funds",
     "definition": "Interest earned on City reserves and reserve funds.",
+    "details": "Who: City treasury. What/How: interest earned on reserve and reserve fund balances held for specific purposes. Why: grows reserves and is reported as investment income.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Annual Financial Report (2024)",
+        "path": "https://www.toronto.ca/wp-content/uploads/2025/08/9515-2024-City-of-Toronto-Financial-Report.pdf"
+      }
+    ],
     "matches": [
       "interest earned on reserves and reserve funds"
     ]
@@ -156,6 +341,17 @@
     "id": "licences-permits",
     "term": "Licences and Permits",
     "definition": "Fees collected for licenses, permits, and approvals.",
+    "details": "Who: City of Toronto. What/How: fees for licenses, permits, and approvals required for business, construction, or activities. Why: funds regulation, inspections, and administrative costs.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Municipal Licensing & Standards",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/staff-directory-divisions-and-customer-service/municipal-licensing-standards/"
+      }
+    ],
     "matches": [
       "licences and permits"
     ]
@@ -164,6 +360,13 @@
     "id": "other-fines",
     "term": "Other Fines",
     "definition": "Fines that do not fit into other specified categories.",
+    "details": "Who: City of Toronto. What/How: fines from bylaw or regulatory enforcement not captured in other categories. Why: supports compliance and enforcement activities.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      }
+    ],
     "matches": [
       "other fines"
     ]
@@ -172,6 +375,13 @@
     "id": "gben-revenues",
     "term": "Other Revenues from Government Business Enterprise",
     "definition": "Earnings from City-owned business enterprises beyond regular dividends.",
+    "details": "Who: City-owned business enterprises. What/How: earnings or dividends from municipal enterprises beyond regular dividend payments. Why: records enterprise income in City revenue.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      }
+    ],
     "matches": [
       "other revenues from government business enterprise"
     ]
@@ -180,6 +390,17 @@
     "id": "payments-in-lieu",
     "term": "Payments-In-Lieu of Taxation",
     "definition": "Payments from tax-exempt properties in lieu of property taxes.",
+    "details": "Who: federal/provincial governments and other tax-exempt property owners. What/How: payments made instead of property taxes for eligible properties under separate legislation. Why: compensates municipalities for services provided to tax-exempt properties. Legal basis: Payments in Lieu of Taxes Act (Canada).",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Payments in Lieu of Taxes Act (Canada)",
+        "path": "https://laws-lois.justice.gc.ca/eng/acts/M-13/"
+      }
+    ],
     "matches": [
       "payments-in-lieu of taxation"
     ]
@@ -188,6 +409,13 @@
     "id": "penalties-interest-taxes",
     "term": "Penalties and Interest on Taxes",
     "definition": "Late fees, penalties, and interest charged on tax balances.",
+    "details": "Who: City of Toronto. What/How: late fees, penalties, and interest charged on overdue tax balances. Why: encourages timely payment and recovers financing costs.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      }
+    ],
     "matches": [
       "penalties and interest on taxes"
     ]
@@ -196,6 +424,17 @@
     "id": "provincial-gas-tax-funding",
     "term": "Provincial Gas Tax Funding",
     "definition": "Provincial gas tax transfers used for transit or infrastructure.",
+    "details": "Who: Government of Ontario. What/How: provincial transfer dedicated to public transit, allocated to municipalities by formula. Why: supports transit systems and is recognized when eligibility conditions are met.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Ontario Gas Tax funding backgrounder",
+        "path": "https://news.ontario.ca/en/backgrounder/1005833/2024-25-gas-tax-funding-by-municipality"
+      }
+    ],
     "matches": [
       "provincial gas tax funding"
     ]
@@ -204,6 +443,17 @@
     "id": "provincial-gas-tax-capital",
     "term": "Provincial Gas Tax for Transit Capital Expenses",
     "definition": "Gas tax transfers used for transit capital projects.",
+    "details": "Who: Government of Ontario. What/How: portion of gas tax transfer used for transit capital projects such as vehicles, stations, and infrastructure. Why: funds long-lived transit assets.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Ontario Gas Tax funding backgrounder",
+        "path": "https://news.ontario.ca/en/backgrounder/1005833/2024-25-gas-tax-funding-by-municipality"
+      }
+    ],
     "matches": [
       "provincial gas tax for transit capital expenses"
     ]
@@ -212,6 +462,17 @@
     "id": "provincial-gas-tax-operating",
     "term": "Provincial Gas Tax for Transit Operating Expenses",
     "definition": "Gas tax transfers used for transit operating costs.",
+    "details": "Who: Government of Ontario. What/How: portion of gas tax transfer used for transit operating costs such as service delivery, maintenance, and operations. Why: supports day-to-day transit service.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Ontario Gas Tax funding backgrounder",
+        "path": "https://news.ontario.ca/en/backgrounder/1005833/2024-25-gas-tax-funding-by-municipality"
+      }
+    ],
     "matches": [
       "provincial gas tax for transit operating expenses"
     ]
@@ -220,6 +481,17 @@
     "id": "poa-revenue",
     "term": "Provincial Offences Act (POA) Revenue",
     "definition": "Administration of provincial offences (e.g., traffic tickets), including courts, enforcement, and related fees.",
+    "details": "Who: City of Toronto under the Provincial Offences Act. What/How: revenue from administering provincial offences such as traffic tickets, including fines, court fees, and recoveries. Why: supports enforcement and court administration in Toronto. Legal basis: Provincial Offences Act (Ontario).",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Provincial Offences Act (Ontario)",
+        "path": "https://www.ontario.ca/laws/statute/90p33"
+      }
+    ],
     "matches": [
       "provincial offences act (poa) municipality which administers poa only",
       "provincial offences act"
@@ -229,6 +501,13 @@
     "id": "revenue-other-municipalities",
     "term": "Revenue From Other Municipalities",
     "definition": "Transfers or recoveries from other municipalities.",
+    "details": "Who: other municipalities. What/How: transfers or recoveries for shared services or agreements. Why: reflects cost-sharing for cross-jurisdiction services.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      }
+    ],
     "matches": [
       "revenue from other municipalities"
     ]
@@ -237,6 +516,13 @@
     "id": "sales-publications-equipment",
     "term": "Sale of Publications, Equipment, etc.",
     "definition": "Revenue from selling publications, equipment, or materials.",
+    "details": "Who: City of Toronto. What/How: revenue from selling publications, materials, or surplus equipment. Why: recovers costs and generates minor revenues from sales.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      }
+    ],
     "matches": [
       "sale of publications, equipment, etc."
     ]
@@ -245,6 +531,21 @@
     "id": "transient-accommodation-tax",
     "term": "Transient Accommodation Tax",
     "definition": "Hotel tax collected on short-term accommodations.",
+    "details": "Who: City of Toronto. What/How: tax on short-term accommodations collected by operators and remitted to the City under the Municipal Accommodation Tax program. Why: supports tourism-related and municipal services. Legal basis: Toronto Municipal Code Chapter 758.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Municipal Accommodation Tax program",
+        "path": "https://www.toronto.ca/services-payments/property-taxes-utilities/municipal-accommodation-tax/"
+      },
+      {
+        "type": "Toronto Municipal Code Ch. 758",
+        "path": "https://www.toronto.ca/legdocs/municode/toronto-code-758.pdf"
+      }
+    ],
     "matches": [
       "transient accommodation tax"
     ]
@@ -253,6 +554,17 @@
     "id": "ambulance-dispatch",
     "term": "Ambulance Dispatch",
     "definition": "Emergency call intake and dispatch for paramedic services.",
+    "details": "Who: City public safety services and partners. What/How: operating costs for emergency response, enforcement, and protective services, including staffing, equipment, and facilities. Why/Where: protects residents and property across Toronto and is reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Paramedic Services",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/staff-directory-divisions-and-customer-service/toronto-paramedic-services/"
+      }
+    ],
     "matches": [
       "ambulance dispatch"
     ]
@@ -261,6 +573,17 @@
     "id": "ambulance-services",
     "term": "Ambulance Services",
     "definition": "Paramedic operations and emergency medical response.",
+    "details": "Who: City public safety services and partners. What/How: operating costs for emergency response, enforcement, and protective services, including staffing, equipment, and facilities. Why/Where: protects residents and property across Toronto and is reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Paramedic Services",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/staff-directory-divisions-and-customer-service/toronto-paramedic-services/"
+      }
+    ],
     "matches": [
       "ambulance services"
     ]
@@ -269,6 +592,17 @@
     "id": "building-permit-inspection",
     "term": "Building Permit and Inspection Services",
     "definition": "Building permits, inspections, and code enforcement.",
+    "details": "Who: Council, corporate leadership, and shared service divisions. What/How: governance and administrative support that enables service delivery, including policy, finance, HR, IT, and regulatory functions. Why: ensures citywide coordination and compliance; reported in the FIR under general government.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Building permits & inspections",
+        "path": "https://www.toronto.ca/services-payments/building-construction/apply-for-a-building-permit/"
+      }
+    ],
     "matches": [
       "building permit and inspection services"
     ]
@@ -277,6 +611,17 @@
     "id": "child-care-early-years",
     "term": "Child Care and Early Years Learning",
     "definition": "Child care services and early learning programs.",
+    "details": "Who: City divisions and community partners. What/How: operating costs to deliver social supports, housing, health, or child care services, including staffing, benefits, and program delivery. Why/Where: supports residents across Toronto and is reported in the FIR for the fiscal year.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Licensed child care (City of Toronto)",
+        "path": "https://www.toronto.ca/community-people/children-parenting/children-programs-activities/licensed-child-care/"
+      }
+    ],
     "matches": [
       "child care and early years learning"
     ]
@@ -285,6 +630,17 @@
     "id": "commercial-industrial",
     "term": "Commercial and Industrial",
     "definition": "Services related to commercial and industrial activity.",
+    "details": "Who: Council, corporate leadership, and shared service divisions. What/How: governance and administrative support that enables service delivery, including policy, finance, HR, IT, and regulatory functions. Why: ensures citywide coordination and compliance; reported in the FIR under general government.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "City Planning",
+        "path": "https://www.toronto.ca/city-government/planning-development/"
+      }
+    ],
     "matches": [
       "commercial and industrial"
     ]
@@ -293,6 +649,17 @@
     "id": "conservation-authority",
     "term": "Conservation Authority",
     "definition": "Funding for conservation authority programs and watershed management.",
+    "details": "Who: City utility and environment services. What/How: operating costs for water, wastewater, stormwater, solid waste, and related programs. Why: maintains essential infrastructure and compliance; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto and Region Conservation Authority",
+        "path": "https://trca.ca/"
+      }
+    ],
     "matches": [
       "conservation authority"
     ]
@@ -301,6 +668,17 @@
     "id": "corporate-management",
     "term": "Corporate Management",
     "definition": "City-wide management and corporate administration.",
+    "details": "Who: Council, corporate leadership, and shared service divisions. What/How: governance and administrative support that enables service delivery, including policy, finance, HR, IT, and regulatory functions. Why: ensures citywide coordination and compliance; reported in the FIR under general government.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "City Manager's Office",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/city-managers-office/"
+      }
+    ],
     "matches": [
       "corporate management"
     ]
@@ -309,6 +687,17 @@
     "id": "court-security",
     "term": "Court Security",
     "definition": "Security for courts and judicial facilities.",
+    "details": "Who: City public safety services and partners. What/How: operating costs for emergency response, enforcement, and protective services, including staffing, equipment, and facilities. Why/Where: protects residents and property across Toronto and is reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Police Service (City agency)",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/city-managers-office/agencies-corporations/agencies/toronto-police-service/"
+      }
+    ],
     "matches": [
       "court security"
     ]
@@ -317,6 +706,17 @@
     "id": "cultural-services",
     "term": "Cultural Services",
     "definition": "Arts and cultural programs and services.",
+    "details": "Who: City divisions and cultural partners. What/How: operating costs for cultural and recreation services, including facilities, programs, and maintenance. Why: provides community amenities across Toronto; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Arts & culture (City of Toronto)",
+        "path": "https://www.toronto.ca/explore-enjoy/history-art-culture/"
+      }
+    ],
     "matches": [
       "cultural services"
     ]
@@ -325,6 +725,17 @@
     "id": "emergency-measures",
     "term": "Emergency Measures",
     "definition": "Emergency management and preparedness.",
+    "details": "Who: City public safety services and partners. What/How: operating costs for emergency response, enforcement, and protective services, including staffing, equipment, and facilities. Why/Where: protects residents and property across Toronto and is reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Emergency Management",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/staff-directory-divisions-and-customer-service/toronto-emergency-management/"
+      }
+    ],
     "matches": [
       "emergency measures"
     ]
@@ -333,6 +744,17 @@
     "id": "fire-services",
     "term": "Fire",
     "definition": "Fire services operations.",
+    "details": "Who: City public safety services and partners. What/How: operating costs for emergency response, enforcement, and protective services, including staffing, equipment, and facilities. Why/Where: protects residents and property across Toronto and is reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Fire Services",
+        "path": "https://www.toronto.ca/community-people/public-safety-alerts/fire-services/"
+      }
+    ],
     "matches": [
       "fire"
     ]
@@ -341,6 +763,17 @@
     "id": "governance",
     "term": "Governance",
     "definition": "Council operations and governance functions.",
+    "details": "Who: Council, corporate leadership, and shared service divisions. What/How: governance and administrative support that enables service delivery, including policy, finance, HR, IT, and regulatory functions. Why: ensures citywide coordination and compliance; reported in the FIR under general government.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "City Council",
+        "path": "https://www.toronto.ca/city-government/council/"
+      }
+    ],
     "matches": [
       "governance"
     ]
@@ -349,6 +782,17 @@
     "id": "libraries",
     "term": "Libraries",
     "definition": "Public library operations.",
+    "details": "Who: City divisions and cultural partners. What/How: operating costs for cultural and recreation services, including facilities, programs, and maintenance. Why: provides community amenities across Toronto; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Public Library (City agency)",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/city-managers-office/agencies-corporations/agencies/toronto-public-library/"
+      }
+    ],
     "matches": [
       "libraries"
     ]
@@ -357,6 +801,17 @@
     "id": "museums",
     "term": "Museums",
     "definition": "City museum operations and services.",
+    "details": "Who: City divisions and cultural partners. What/How: operating costs for cultural and recreation services, including facilities, programs, and maintenance. Why: provides community amenities across Toronto; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "City museums",
+        "path": "https://www.toronto.ca/explore-enjoy/history-art-culture/museums/"
+      }
+    ],
     "matches": [
       "museums"
     ]
@@ -365,6 +820,17 @@
     "id": "parking",
     "term": "Parking",
     "definition": "Parking operations and services.",
+    "details": "Who: City transportation services. What/How: operating and maintenance costs for roads, transit, traffic operations, parking, and winter control. Why: keeps transportation networks safe and functional; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Parking Authority (City agency)",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/city-managers-office/agencies-corporations/agencies/toronto-parking-authority/"
+      }
+    ],
     "matches": [
       "parking"
     ]
@@ -373,6 +839,17 @@
     "id": "parks",
     "term": "Parks",
     "definition": "Parks operations and maintenance.",
+    "details": "Who: City divisions and cultural partners. What/How: operating costs for cultural and recreation services, including facilities, programs, and maintenance. Why: provides community amenities across Toronto; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Parks, Forestry & Recreation",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/staff-directory-divisions-and-customer-service/parks-forestry-recreation/"
+      }
+    ],
     "matches": [
       "parks"
     ]
@@ -381,6 +858,17 @@
     "id": "planning-zoning",
     "term": "Planning and Zoning",
     "definition": "City planning, zoning, and development review.",
+    "details": "Who: Council, corporate leadership, and shared service divisions. What/How: governance and administrative support that enables service delivery, including policy, finance, HR, IT, and regulatory functions. Why: ensures citywide coordination and compliance; reported in the FIR under general government.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "City Planning",
+        "path": "https://www.toronto.ca/city-government/planning-development/"
+      }
+    ],
     "matches": [
       "planning and zoning"
     ]
@@ -389,6 +877,17 @@
     "id": "police",
     "term": "Police",
     "definition": "Police services.",
+    "details": "Who: City public safety services and partners. What/How: operating costs for emergency response, enforcement, and protective services, including staffing, equipment, and facilities. Why/Where: protects residents and property across Toronto and is reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Police Service (City agency)",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/city-managers-office/agencies-corporations/agencies/toronto-police-service/"
+      }
+    ],
     "matches": [
       "police"
     ]
@@ -397,6 +896,17 @@
     "id": "prisoner-transportation",
     "term": "Prisoner Transportation",
     "definition": "Transport for detainees and court-related custody.",
+    "details": "Who: City public safety services and partners. What/How: operating costs for emergency response, enforcement, and protective services, including staffing, equipment, and facilities. Why/Where: protects residents and property across Toronto and is reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Police Service (City agency)",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/city-managers-office/agencies-corporations/agencies/toronto-police-service/"
+      }
+    ],
     "matches": [
       "prisoner transportation"
     ]
@@ -405,6 +915,17 @@
     "id": "program-support",
     "term": "Program Support",
     "definition": "Program administration and shared support services.",
+    "details": "Who: Council, corporate leadership, and shared service divisions. What/How: governance and administrative support that enables service delivery, including policy, finance, HR, IT, and regulatory functions. Why: ensures citywide coordination and compliance; reported in the FIR under general government.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "City Manager's Office",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/city-managers-office/"
+      }
+    ],
     "matches": [
       "program support"
     ]
@@ -413,6 +934,17 @@
     "id": "protective-inspection",
     "term": "Protective Inspection and Control",
     "definition": "Inspection and enforcement for public safety and compliance.",
+    "details": "Who: City public safety services and partners. What/How: operating costs for emergency response, enforcement, and protective services, including staffing, equipment, and facilities. Why/Where: protects residents and property across Toronto and is reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Municipal Licensing & Standards",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/staff-directory-divisions-and-customer-service/municipal-licensing-standards/"
+      }
+    ],
     "matches": [
       "protective inspection and control"
     ]
@@ -421,6 +953,17 @@
     "id": "public-health-services",
     "term": "Public Health Services",
     "definition": "Public health programs and services.",
+    "details": "Who: City divisions and community partners. What/How: operating costs to deliver social supports, housing, health, or child care services, including staffing, benefits, and program delivery. Why/Where: supports residents across Toronto and is reported in the FIR for the fiscal year.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Public health programs (City of Toronto)",
+        "path": "https://www.toronto.ca/community-people/health-wellness-care/health-programs-advice/"
+      }
+    ],
     "matches": [
       "public health services"
     ]
@@ -429,6 +972,17 @@
     "id": "public-housing",
     "term": "Public Housing",
     "definition": "Public housing operations and supports.",
+    "details": "Who: City divisions and community partners. What/How: operating costs to deliver social supports, housing, health, or child care services, including staffing, benefits, and program delivery. Why/Where: supports residents across Toronto and is reported in the FIR for the fiscal year.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Housing & shelter (City of Toronto)",
+        "path": "https://www.toronto.ca/community-people/housing-shelter/"
+      }
+    ],
     "matches": [
       "public housing"
     ]
@@ -437,6 +991,17 @@
     "id": "recreation-facilities-other",
     "term": "Recreation Facilities - All Other",
     "definition": "Operations for recreation facilities not listed elsewhere.",
+    "details": "Who: City divisions and cultural partners. What/How: operating costs for cultural and recreation services, including facilities, programs, and maintenance. Why: provides community amenities across Toronto; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Parks, Forestry & Recreation",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/staff-directory-divisions-and-customer-service/parks-forestry-recreation/"
+      }
+    ],
     "matches": [
       "recreation facilities - all other"
     ]
@@ -445,6 +1010,17 @@
     "id": "recreation-facilities-golf",
     "term": "Recreation Facilities - Golf Course, Marina, Ski Hill",
     "definition": "Operations for city golf courses, marinas, and ski hill.",
+    "details": "Who: City divisions and cultural partners. What/How: operating costs for cultural and recreation services, including facilities, programs, and maintenance. Why: provides community amenities across Toronto; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Parks, Forestry & Recreation",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/staff-directory-divisions-and-customer-service/parks-forestry-recreation/"
+      }
+    ],
     "matches": [
       "recreation facilities - golf course, marina, ski hill"
     ]
@@ -453,6 +1029,17 @@
     "id": "recreation-programs",
     "term": "Recreation Programs",
     "definition": "Recreation programming and activities.",
+    "details": "Who: City divisions and cultural partners. What/How: operating costs for cultural and recreation services, including facilities, programs, and maintenance. Why: provides community amenities across Toronto; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Parks, Forestry & Recreation",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/staff-directory-divisions-and-customer-service/parks-forestry-recreation/"
+      }
+    ],
     "matches": [
       "recreation programs"
     ]
@@ -461,6 +1048,17 @@
     "id": "roads-bridges",
     "term": "Roads - Bridges and Culverts",
     "definition": "Bridge and culvert maintenance and operations.",
+    "details": "Who: City transportation services. What/How: operating and maintenance costs for roads, transit, traffic operations, parking, and winter control. Why: keeps transportation networks safe and functional; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Transportation Services",
+        "path": "https://www.toronto.ca/services-payments/streets-parking-transportation/transportation-services/"
+      }
+    ],
     "matches": [
       "roads - bridges and culverts"
     ]
@@ -469,6 +1067,17 @@
     "id": "roads-paved",
     "term": "Roads - Paved",
     "definition": "Paved road maintenance and operations.",
+    "details": "Who: City transportation services. What/How: operating and maintenance costs for roads, transit, traffic operations, parking, and winter control. Why: keeps transportation networks safe and functional; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Transportation Services",
+        "path": "https://www.toronto.ca/services-payments/streets-parking-transportation/transportation-services/"
+      }
+    ],
     "matches": [
       "roads - paved"
     ]
@@ -477,6 +1086,17 @@
     "id": "roads-traffic",
     "term": "Roads - Traffic Operations & Roadside",
     "definition": "Traffic operations, signals, and roadside services.",
+    "details": "Who: City transportation services. What/How: operating and maintenance costs for roads, transit, traffic operations, parking, and winter control. Why: keeps transportation networks safe and functional; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Transportation Services",
+        "path": "https://www.toronto.ca/services-payments/streets-parking-transportation/transportation-services/"
+      }
+    ],
     "matches": [
       "roads - traffic operations & roadside"
     ]
@@ -485,6 +1105,17 @@
     "id": "solid-waste-collection",
     "term": "Solid Waste Collection",
     "definition": "Residential and commercial waste collection.",
+    "details": "Who: City utility and environment services. What/How: operating costs for water, wastewater, stormwater, solid waste, and related programs. Why: maintains essential infrastructure and compliance; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Solid Waste Management Services",
+        "path": "https://www.toronto.ca/services-payments/recycling-organics-garbage/"
+      }
+    ],
     "matches": [
       "solid waste collection"
     ]
@@ -493,6 +1124,17 @@
     "id": "solid-waste-disposal",
     "term": "Solid Waste Disposal",
     "definition": "Waste disposal operations.",
+    "details": "Who: City utility and environment services. What/How: operating costs for water, wastewater, stormwater, solid waste, and related programs. Why: maintains essential infrastructure and compliance; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Solid Waste Management Services",
+        "path": "https://www.toronto.ca/services-payments/recycling-organics-garbage/"
+      }
+    ],
     "matches": [
       "solid waste disposal"
     ]
@@ -501,6 +1143,17 @@
     "id": "street-lighting",
     "term": "Street Lighting",
     "definition": "Streetlight operations and maintenance.",
+    "details": "Who: City transportation services. What/How: operating and maintenance costs for roads, transit, traffic operations, parking, and winter control. Why: keeps transportation networks safe and functional; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Transportation Services",
+        "path": "https://www.toronto.ca/services-payments/streets-parking-transportation/transportation-services/"
+      }
+    ],
     "matches": [
       "street lighting"
     ]
@@ -509,6 +1162,17 @@
     "id": "transit-conventional",
     "term": "Transit - Conventional",
     "definition": "Conventional public transit operations.",
+    "details": "Who: City transportation services. What/How: operating and maintenance costs for roads, transit, traffic operations, parking, and winter control. Why: keeps transportation networks safe and functional; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Transit Commission (City agency)",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/city-managers-office/agencies-corporations/agencies/toronto-transit-commission/"
+      }
+    ],
     "matches": [
       "transit - conventional"
     ]
@@ -517,6 +1181,17 @@
     "id": "urban-storm-sewer",
     "term": "Urban Storm Sewer System",
     "definition": "Storm sewer system operations and maintenance.",
+    "details": "Who: City utility and environment services. What/How: operating costs for water, wastewater, stormwater, solid waste, and related programs. Why: maintains essential infrastructure and compliance; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Water",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/staff-directory-divisions-and-customer-service/toronto-water/"
+      }
+    ],
     "matches": [
       "urban storm sewer system"
     ]
@@ -525,6 +1200,17 @@
     "id": "waste-diversion",
     "term": "Waste Diversion",
     "definition": "Recycling and organics diversion programs.",
+    "details": "Who: City utility and environment services. What/How: operating costs for water, wastewater, stormwater, solid waste, and related programs. Why: maintains essential infrastructure and compliance; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Solid Waste Management Services",
+        "path": "https://www.toronto.ca/services-payments/recycling-organics-garbage/"
+      }
+    ],
     "matches": [
       "waste diversion"
     ]
@@ -533,6 +1219,17 @@
     "id": "wastewater-collection",
     "term": "Wastewater Collection / Conveyance",
     "definition": "Wastewater collection and conveyance systems.",
+    "details": "Who: City utility and environment services. What/How: operating costs for water, wastewater, stormwater, solid waste, and related programs. Why: maintains essential infrastructure and compliance; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Water",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/staff-directory-divisions-and-customer-service/toronto-water/"
+      }
+    ],
     "matches": [
       "wastewater collection / conveyance"
     ]
@@ -541,6 +1238,17 @@
     "id": "wastewater-treatment",
     "term": "Wastewater Treatment & Disposal",
     "definition": "Wastewater treatment plants and disposal.",
+    "details": "Who: City utility and environment services. What/How: operating costs for water, wastewater, stormwater, solid waste, and related programs. Why: maintains essential infrastructure and compliance; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Water",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/staff-directory-divisions-and-customer-service/toronto-water/"
+      }
+    ],
     "matches": [
       "wastewater treatment & disposal"
     ]
@@ -549,6 +1257,17 @@
     "id": "water-distribution",
     "term": "Water Distribution / Transmission",
     "definition": "Water distribution and transmission systems.",
+    "details": "Who: City utility and environment services. What/How: operating costs for water, wastewater, stormwater, solid waste, and related programs. Why: maintains essential infrastructure and compliance; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Water",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/staff-directory-divisions-and-customer-service/toronto-water/"
+      }
+    ],
     "matches": [
       "water distribution / transmission"
     ]
@@ -557,6 +1276,17 @@
     "id": "water-treatment",
     "term": "Water Treatment",
     "definition": "Water treatment plants and processes.",
+    "details": "Who: City utility and environment services. What/How: operating costs for water, wastewater, stormwater, solid waste, and related programs. Why: maintains essential infrastructure and compliance; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Toronto Water",
+        "path": "https://www.toronto.ca/city-government/accountability-operations-customer-service/city-administration/staff-directory-divisions-and-customer-service/toronto-water/"
+      }
+    ],
     "matches": [
       "water treatment"
     ]
@@ -565,6 +1295,21 @@
     "id": "winter-control-roads",
     "term": "Winter Control - Except Sidewalks, Parking Lots",
     "definition": "Road winter maintenance such as plowing and salting.",
+    "details": "Who: City transportation services. What/How: operating and maintenance costs for roads, transit, traffic operations, parking, and winter control. Why: keeps transportation networks safe and functional; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Winter maintenance",
+        "path": "https://www.toronto.ca/services-payments/streets-parking-transportation/road-maintenance/winter-maintenance/"
+      },
+      {
+        "type": "Transportation Services",
+        "path": "https://www.toronto.ca/services-payments/streets-parking-transportation/transportation-services/"
+      }
+    ],
     "matches": [
       "winter control - except sidewalks, parking lots"
     ]
@@ -573,6 +1318,21 @@
     "id": "winter-control-sidewalks",
     "term": "Winter Control - Sidewalks, Parking Lots Only",
     "definition": "Winter maintenance for sidewalks and parking lots.",
+    "details": "Who: City transportation services. What/How: operating and maintenance costs for roads, transit, traffic operations, parking, and winter control. Why: keeps transportation networks safe and functional; reported in the FIR.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      },
+      {
+        "type": "Winter maintenance",
+        "path": "https://www.toronto.ca/services-payments/streets-parking-transportation/road-maintenance/winter-maintenance/"
+      },
+      {
+        "type": "Transportation Services",
+        "path": "https://www.toronto.ca/services-payments/streets-parking-transportation/transportation-services/"
+      }
+    ],
     "matches": [
       "winter control - sidewalks, parking lots only"
     ]
@@ -581,8 +1341,221 @@
     "id": "other",
     "term": "Other",
     "definition": "Miscellaneous items not classified elsewhere. In the flow view, \"Other\" also groups any line items that do not match a bucket rule.",
+    "details": "Catch-all line item for items not classified elsewhere in the FIR. In the flow view, this also aggregates items that do not match a bucket rule.",
+    "sources": [
+      {
+        "type": "Ontario FIR Instructions (2024)",
+        "path": "https://efis.fma.csc.gov.on.ca/fir/wp-content/uploads/fir-files/municipal-reporting/fir-instructions/2024/FIR2024%20Instructions.pdf"
+      }
+    ],
     "matches": [
       "other"
+    ]
+  },
+  {
+    "id": "motion-type-adopt-item",
+    "term": "Adopt Item",
+    "definition": "A vote to accept a recommendation or item exactly as written. This is the final decision on whether something becomes policy.",
+    "details": "Who: City Council or Committee. What/How: The council votes yes or no on accepting a recommendation in its original form. Why: This is the definitive vote that determines if a motion passes or fails. If adopted, the item becomes official city policy or direction.",
+    "sources": [
+      {
+        "type": "Toronto City Council Procedure",
+        "path": "https://www.toronto.ca/city-government/council/council-procedures-and-rules/"
+      }
+    ],
+    "matches": [
+      "adopt item",
+      "final vote",
+      "adoption vote"
+    ]
+  },
+  {
+    "id": "motion-type-adopt-item-as-amended",
+    "term": "Adopt Item as Amended",
+    "definition": "A vote to accept a recommendation AFTER it has been modified by amendments. The final version differs from what was originally proposed.",
+    "details": "Who: City Council or Committee. What/How: After one or more amendments pass, this vote adopts the modified version of the item. Why: Indicates the original proposal was changed before passing. The amendments that passed are incorporated into the final decision.",
+    "sources": [
+      {
+        "type": "Toronto City Council Procedure",
+        "path": "https://www.toronto.ca/city-government/council/council-procedures-and-rules/"
+      }
+    ],
+    "matches": [
+      "adopt item as amended",
+      "adopted as amended",
+      "passed with amendments"
+    ]
+  },
+  {
+    "id": "motion-type-amend-item",
+    "term": "Amend Item",
+    "definition": "A proposal to change the wording, scope, or substance of an item before it's adopted. Shows someone wanted to modify the original proposal.",
+    "details": "Who: Any councillor. What/How: A councillor proposes specific changes to the item text, funding amounts, conditions, or scope. Council then votes on whether to accept the amendment. Why: Amendments allow council to modify proposals rather than simply accepting or rejecting them. High amendment activity indicates negotiation and debate.",
+    "sources": [
+      {
+        "type": "Toronto City Council Procedure",
+        "path": "https://www.toronto.ca/city-government/council/council-procedures-and-rules/"
+      }
+    ],
+    "matches": [
+      "amend item",
+      "amendment",
+      "proposed amendment"
+    ]
+  },
+  {
+    "id": "motion-type-amend-item-additional",
+    "term": "Amend Item (Additional)",
+    "definition": "A subsequent amendment after one has already been proposed. Indicates active negotiation or debate about the specifics of an item.",
+    "details": "Who: Any councillor. What/How: After an initial amendment is proposed, additional councillors can propose further changes. Multiple amendments are voted on separately. Why: Multiple amendments signal a contentious item where different councillors want different modifications.",
+    "sources": [
+      {
+        "type": "Toronto City Council Procedure",
+        "path": "https://www.toronto.ca/city-government/council/council-procedures-and-rules/"
+      }
+    ],
+    "matches": [
+      "amend item additional",
+      "additional amendment",
+      "subsequent amendment"
+    ]
+  },
+  {
+    "id": "motion-type-defer-item",
+    "term": "Defer Item",
+    "definition": "Postpone the vote to a future meeting. Often used strategically to buy time, build coalitions, gather more information, or time decisions politically.",
+    "details": "Who: Any councillor. What/How: A motion to delay consideration of the item to a specified future date or indefinitely. Requires a vote. Why: Deferral can signal opposition (buying time to organize), uncertainty (need more information), or political timing (wait for better circumstances). Items can be deferred multiple times.",
+    "sources": [
+      {
+        "type": "Toronto City Council Procedure",
+        "path": "https://www.toronto.ca/city-government/council/council-procedures-and-rules/"
+      }
+    ],
+    "matches": [
+      "defer item",
+      "deferral",
+      "postpone",
+      "delay vote"
+    ]
+  },
+  {
+    "id": "motion-type-refer-item",
+    "term": "Refer Item",
+    "definition": "Send the item back to a committee or staff for more work or study. Signals the item isn't ready or needs revision.",
+    "details": "Who: Any councillor. What/How: A motion to send the item to a standing committee or city staff for further review, consultation, or revision. The item may return with a new recommendation. Why: Referral is softer than voting No—it acknowledges the issue but requests more work. Can be used strategically to delay contentious items.",
+    "sources": [
+      {
+        "type": "Toronto City Council Procedure",
+        "path": "https://www.toronto.ca/city-government/council/council-procedures-and-rules/"
+      }
+    ],
+    "matches": [
+      "refer item",
+      "referral",
+      "refer back",
+      "send to committee"
+    ]
+  },
+  {
+    "id": "motion-type-reconsider",
+    "term": "Reconsider Item/Vote",
+    "definition": "Reopen a decision that was already made earlier in the same meeting. Rare and significant—means someone changed their mind or new information emerged.",
+    "details": "Who: A councillor who voted with the majority. What/How: A motion to undo or redo a previous vote from the same meeting. Usually requires the mover to have been on the winning side of the original vote. Why: Very unusual and signals controversy or a significant development. May indicate lobbying during breaks or new information coming to light.",
+    "sources": [
+      {
+        "type": "Toronto City Council Procedure",
+        "path": "https://www.toronto.ca/city-government/council/council-procedures-and-rules/"
+      }
+    ],
+    "matches": [
+      "reconsider item",
+      "reconsider vote",
+      "reconsideration"
+    ]
+  },
+  {
+    "id": "motion-type-reopen-item",
+    "term": "Re-Open Item",
+    "definition": "Similar to reconsider, but for items from previous meetings. Requires a two-thirds majority. A major procedural move.",
+    "details": "Who: Any councillor. What/How: A motion to bring back an item that was decided at a previous meeting for a new vote. Requires 2/3 majority to pass. Why: Very significant—indicates serious concerns about a previous decision. Rare because of the high threshold required.",
+    "sources": [
+      {
+        "type": "Toronto City Council Procedure",
+        "path": "https://www.toronto.ca/city-government/council/council-procedures-and-rules/"
+      }
+    ],
+    "matches": [
+      "re-open item",
+      "reopen item",
+      "bring back"
+    ]
+  },
+  {
+    "id": "motion-type-end-debate",
+    "term": "End Debate",
+    "definition": "Cut off discussion and move to vote immediately. Used when debate is dragging on. Can be controversial if used to silence opposition.",
+    "details": "Who: Any councillor. What/How: A procedural motion to stop all remaining speakers and proceed directly to the vote. Requires a vote to pass. Why: Can be legitimate (debate exhausted, time constraints) or controversial (preventing opposition from being heard). Watch for patterns of who calls this motion.",
+    "sources": [
+      {
+        "type": "Toronto City Council Procedure",
+        "path": "https://www.toronto.ca/city-government/council/council-procedures-and-rules/"
+      }
+    ],
+    "matches": [
+      "end debate",
+      "call the question",
+      "close debate"
+    ]
+  },
+  {
+    "id": "motion-type-extend-meeting",
+    "term": "Extend the Meeting",
+    "definition": "Council meetings have scheduled end times. This vote extends past that time. Late-night votes often happen on contentious items.",
+    "details": "Who: Any councillor. What/How: When the scheduled meeting end time approaches, council votes on whether to continue. Requires a vote. Why: Important but not urgent items may be pushed to late hours. Late-night votes can favor those with more stamina or fewer commitments.",
+    "sources": [
+      {
+        "type": "Toronto City Council Procedure",
+        "path": "https://www.toronto.ca/city-government/council/council-procedures-and-rules/"
+      }
+    ],
+    "matches": [
+      "extend the meeting",
+      "extend meeting",
+      "extend hour of adjournment"
+    ]
+  },
+  {
+    "id": "motion-type-waive-referral",
+    "term": "Waive Referral",
+    "definition": "Skip the normal referral to committee and vote directly. Used for urgent matters or when something is straightforward.",
+    "details": "Who: Any councillor. What/How: Bypasses the normal committee review process to allow direct council action. Requires a vote. Why: Urgent items may need fast action. However, skipping committee review means less scrutiny and public input.",
+    "sources": [
+      {
+        "type": "Toronto City Council Procedure",
+        "path": "https://www.toronto.ca/city-government/council/council-procedures-and-rules/"
+      }
+    ],
+    "matches": [
+      "waive referral",
+      "skip committee",
+      "direct to council"
+    ]
+  },
+  {
+    "id": "motion-type-receive-for-information",
+    "term": "Receive for Information",
+    "definition": "Accept a report without taking action. Just acknowledging receipt. Low stakes—no policy change.",
+    "details": "Who: City Council or Committee. What/How: The council officially receives a report or update but takes no action on it. Why: Informational items keep council informed without requiring decisions. Voting No on receive-for-information is very rare and signals objection to even acknowledging the report.",
+    "sources": [
+      {
+        "type": "Toronto City Council Procedure",
+        "path": "https://www.toronto.ca/city-government/council/council-procedures-and-rules/"
+      }
+    ],
+    "matches": [
+      "receive for information",
+      "received for information",
+      "information only"
     ]
   }
 ]

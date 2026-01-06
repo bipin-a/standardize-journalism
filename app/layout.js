@@ -4,6 +4,9 @@ import SiteHeader from './components/SiteHeader'
 export const metadata = {
   title: 'Toronto Money Flow',
   description: 'Track Toronto municipal spending',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({ children }) {

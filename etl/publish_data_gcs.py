@@ -658,14 +658,28 @@ def aggregate_councillor_voting(motions):
                     "yes_votes": 0,
                     "no_votes": 0,
                     "absent": 0,
+                    # New fields for amendment/defer/refer tracking
+                    "tried_to_amend_count": 0,
+                    "tried_to_defer_count": 0,
+                    "tried_to_refer_count": 0,
                 }
             councillors[name]["votes_cast"] += 1
-            if vote.get("vote") == "Yes":
+            
+            vote_value = vote.get("final_vote")
+            if vote_value == "Yes":
                 councillors[name]["yes_votes"] += 1
-            elif vote.get("vote") == "No":
+            elif vote_value == "No":
                 councillors[name]["no_votes"] += 1
             else:
                 councillors[name]["absent"] += 1
+            
+            # Track amendment/defer/refer attempts (new schema)
+            if vote.get("tried_to_amend"):
+                councillors[name]["tried_to_amend_count"] += 1
+            if vote.get("tried_to_defer"):
+                councillors[name]["tried_to_defer_count"] += 1
+            if vote.get("tried_to_refer"):
+                councillors[name]["tried_to_refer_count"] += 1
 
     total_motions = len(motions)
     councillor_list = []

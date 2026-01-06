@@ -804,7 +804,7 @@ const MoneyFlowSection = ({ year, moneyFlow, loading, error, status, budgetActua
                   </div>
                   {renderGroupList(revenueBottomGroups, '#86efac')}
                   <div style={{ marginTop: '6px', fontSize: '11px', color: '#9ca3af' }}>
-                    Smallest is relative to the full city budget, so values can still be in the tens of millions.
+                    Values can still be in the tens of millions.
                   </div>
                 </div>
               )}
@@ -930,7 +930,7 @@ const MoneyFlowSection = ({ year, moneyFlow, loading, error, status, budgetActua
                   </div>
                   {renderGroupList(expenditureBottomGroups, '#93c5fd')}
                   <div style={{ marginTop: '6px', fontSize: '11px', color: '#9ca3af' }}>
-                    Smallest is relative to the full city budget, so values can still be in the tens of millions.
+                    Values can still be in the tens of millions.
                   </div>
                 </div>
               )}

@@ -104,20 +104,37 @@ def parse_date(date_str):
         return None
 
     try:
+        # Clean up weird format like "2025-05-22 16:50 PM" (redundant AM/PM after 24h time)
+        cleaned = str(date_str).strip()
+        cleaned = re.sub(r'\s+(AM|PM)$', '', cleaned, flags=re.IGNORECASE)
+        
         # Try parsing ISO format first
-        dt = pd.to_datetime(date_str)
+        dt = pd.to_datetime(cleaned)
         return dt.strftime("%Y-%m-%d")
     except:
         return None
 
 
-def aggregate_vote_results(df, motion_id_col, vote_col, councillor_col=None, first_name_col=None, last_name_col=None):
-    """Aggregate vote results per motion"""
+def aggregate_vote_results(df, motion_id_col, vote_col, motion_type_col, councillor_col=None, first_name_col=None, last_name_col=None):
+    """
+    Aggregate vote results per motion with rich per-councillor data.
+    
+    Output schema per councillor:
+    {
+      "councillor_name": "Jamaal Myers",
+      "final_vote": "Yes",
+      "tried_to_amend": true,
+      "amendment_votes": { "yes": 3, "no": 1 },
+      "tried_to_defer": false,
+      "tried_to_refer": false
+    }
+    """
     motions = {}
 
     for _, row in df.iterrows():
         motion_id = row.get(motion_id_col)
         vote = row.get(vote_col)
+        motion_type = str(row.get(motion_type_col, "")).strip()
 
         if pd.isna(motion_id):
             continue
@@ -125,22 +142,17 @@ def aggregate_vote_results(df, motion_id_col, vote_col, councillor_col=None, fir
         if motion_id not in motions:
             motions[motion_id] = {
                 "motion_id": str(motion_id),
-                "yes_votes": 0,
-                "no_votes": 0,
-                "absent_votes": 0,
-                "votes": []
+                "councillor_data": {},  # Dict for per-councillor aggregation
+                "councillor_order": []  # Track order
             }
 
-        # Count votes
+        # Normalize vote value
         vote_str = str(vote).strip().lower()
         if "yes" in vote_str:
-            motions[motion_id]["yes_votes"] += 1
             vote_value = "Yes"
         elif "no" in vote_str:
-            motions[motion_id]["no_votes"] += 1
             vote_value = "No"
         else:
-            motions[motion_id]["absent_votes"] += 1
             vote_value = "Absent"
 
         # Build councillor name
@@ -153,12 +165,93 @@ def aggregate_vote_results(df, motion_id_col, vote_col, councillor_col=None, fir
             if not pd.isna(first) and not pd.isna(last):
                 councillor_name = f"{first} {last}".strip()
 
-        # Store individual vote if councillor info available
-        if councillor_name:
-            motions[motion_id]["votes"].append({
+        if not councillor_name:
+            continue
+
+        # Initialize councillor data if new
+        if councillor_name not in motions[motion_id]["councillor_data"]:
+            motions[motion_id]["councillor_data"][councillor_name] = {
                 "councillor_name": councillor_name,
-                "vote": vote_value
-            })
+                "final_vote": None,  # Will be set from Adopt Item votes
+                "tried_to_amend": False,
+                "amendment_votes": {"yes": 0, "no": 0},
+                "tried_to_defer": False,
+                "tried_to_refer": False
+            }
+            motions[motion_id]["councillor_order"].append(councillor_name)
+
+        cdata = motions[motion_id]["councillor_data"][councillor_name]
+        motion_type_lower = motion_type.lower()
+
+        # Categorize the vote by motion type
+        if "adopt item" in motion_type_lower:
+            # Final adoption vote - use "No priority" logic
+            # No > Yes > Absent (if they voted No on any adoption, record No)
+            if cdata["final_vote"] is None:
+                cdata["final_vote"] = vote_value
+            elif vote_value == "No":
+                cdata["final_vote"] = "No"
+            elif vote_value == "Yes" and cdata["final_vote"] == "Absent":
+                cdata["final_vote"] = "Yes"
+        
+        elif "amend" in motion_type_lower:
+            # Amendment vote
+            cdata["tried_to_amend"] = True
+            if vote_value == "Yes":
+                cdata["amendment_votes"]["yes"] += 1
+            elif vote_value == "No":
+                cdata["amendment_votes"]["no"] += 1
+        
+        elif "defer" in motion_type_lower:
+            # Deferral vote - if they voted Yes on defer, they tried to defer
+            if vote_value == "Yes":
+                cdata["tried_to_defer"] = True
+        
+        elif "refer" in motion_type_lower:
+            # Referral vote - if they voted Yes on refer, they tried to refer
+            if vote_value == "Yes":
+                cdata["tried_to_refer"] = True
+
+    # Convert councillor data to final format and compute counts
+    for motion_id in motions:
+        councillor_data = motions[motion_id]["councillor_data"]
+        councillor_order = motions[motion_id]["councillor_order"]
+        
+        # Build votes list in order, only for councillors who have a final vote
+        votes_list = []
+        yes_votes = 0
+        no_votes = 0
+        absent_votes = 0
+        
+        for name in councillor_order:
+            cdata = councillor_data[name]
+            
+            # Only include councillors who have an Adopt Item vote
+            if cdata["final_vote"] is not None:
+                votes_list.append({
+                    "councillor_name": cdata["councillor_name"],
+                    "final_vote": cdata["final_vote"],
+                    "tried_to_amend": cdata["tried_to_amend"],
+                    "amendment_votes": cdata["amendment_votes"],
+                    "tried_to_defer": cdata["tried_to_defer"],
+                    "tried_to_refer": cdata["tried_to_refer"]
+                })
+                
+                if cdata["final_vote"] == "Yes":
+                    yes_votes += 1
+                elif cdata["final_vote"] == "No":
+                    no_votes += 1
+                else:
+                    absent_votes += 1
+        
+        motions[motion_id]["votes"] = votes_list
+        motions[motion_id]["yes_votes"] = yes_votes
+        motions[motion_id]["no_votes"] = no_votes
+        motions[motion_id]["absent_votes"] = absent_votes
+        
+        # Clean up temporary fields
+        del motions[motion_id]["councillor_data"]
+        del motions[motion_id]["councillor_order"]
 
     return motions
 
@@ -217,6 +310,10 @@ def build_column_map(columns):
         elif "meeting" in col_lower and "date" in col_lower:
             col_map["meeting_date"] = col
 
+        # Motion type - "Motion Type"
+        if "motion type" in col_lower or "motion" in col_lower and "type" in col_lower:
+            col_map["motion_type"] = col
+
     return col_map
 
 
@@ -272,11 +369,22 @@ def run_etl(args):
         df = filter_recent_months(df, col_map["meeting_date"], args.recent_months)
         print(f"Filtered to {len(df)} records from last {args.recent_months} months")
 
-    # Aggregate votes by motion
+    # We need motion_type column to categorize votes
+    if "motion_type" not in col_map:
+        raise RuntimeError("Could not find 'Motion Type' column required for vote categorization")
+
+    # Show motion type distribution for debugging
+    motion_type_col = col_map["motion_type"]
+    print(f"Motion types in data:")
+    print(df[motion_type_col].value_counts().head(10).to_string())
+
+    # Aggregate votes by motion - processing ALL motion types
+    # The aggregator will categorize: Adopt Item → final_vote, Amend → amendment tracking, etc.
     motions = aggregate_vote_results(
         df,
         col_map["motion_id"],
         col_map["vote"],
+        motion_type_col,
         col_map.get("councillor"),
         col_map.get("first_name"),
         col_map.get("last_name")
@@ -288,9 +396,19 @@ def run_etl(args):
     records = []
     ingested_at = datetime.now(timezone.utc).isoformat()
 
+    # Create filtered DataFrame for metadata lookup (prefer Adopt Item rows for titles)
+    adopt_df = df[df[motion_type_col].str.contains("Adopt Item", case=False, na=False)]
+
     for motion_id, motion_data in motions.items():
-        # Find corresponding row for motion metadata
-        motion_rows = df[df[col_map["motion_id"]] == motion_id]
+        # Skip motions with no final votes (no Adopt Item votes found)
+        if not motion_data["votes"]:
+            continue
+
+        # Find corresponding row for motion metadata - prefer Adopt Item rows
+        motion_rows = adopt_df[adopt_df[col_map["motion_id"]] == motion_id]
+        if motion_rows.empty:
+            # Fall back to any row for this motion
+            motion_rows = df[df[col_map["motion_id"]] == motion_id]
         if motion_rows.empty:
             continue
 
