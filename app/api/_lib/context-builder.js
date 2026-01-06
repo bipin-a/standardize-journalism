@@ -23,7 +23,8 @@ import { canonicalizeCouncillorName } from './councillor-canonicalizer'
 const YEAR_PATTERN = /\b(20\d{2})\b/g
 const MULTI_YEAR_PATTERN = /\b(?:last|past|previous)\s+(\d+)\s+years?\b/i
 const COUNCIL_KEYWORDS = ['council', 'motion', 'motions', 'vote', 'votes', 'decision', 'decisions', 'meeting', 'meetings', 'councillor']
-const MOTION_ID_PATTERN = /\b[A-Z]{1,3}\d+\.\d+\b/i
+// Motion ID pattern: matches both "2024.CC25.1" (full) and "CC25.1" (short) formats
+const MOTION_ID_PATTERN = /\b(?:20\d{2}\.)?[A-Z]{1,3}\d+\.\d+\b/i
 const MOTION_TITLE_HINT_PATTERN = /\b(motion|agenda item|agenda|council motion)\b/i
 const RECENT_KEYWORDS = ['recent', 'recently', 'latest', 'most recent']
 const GLOSSARY_QUERY_PATTERN = /\b(what is|define|meaning of|what does .* mean|explain)\b/i
@@ -640,9 +641,9 @@ async function buildMotionDetailContext(message) {
 
   // Add vote breakdown if available
   if (Array.isArray(match.votes) && match.votes.length > 0) {
-    const yesVotes = match.votes.filter(v => v.vote?.toLowerCase() === 'yes')
-    const noVotes = match.votes.filter(v => v.vote?.toLowerCase() === 'no')
-    const absentVotes = match.votes.filter(v => v.vote?.toLowerCase() === 'absent')
+    const yesVotes = match.votes.filter(v => v.final_vote?.toLowerCase() === 'yes')
+    const noVotes = match.votes.filter(v => v.final_vote?.toLowerCase() === 'no')
+    const absentVotes = match.votes.filter(v => v.final_vote?.toLowerCase() === 'absent')
 
     lines.push('')
     lines.push('VOTE BREAKDOWN:')

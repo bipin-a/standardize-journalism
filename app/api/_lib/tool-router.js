@@ -2,7 +2,8 @@ import { TOOLS } from './tool-definitions'
 import { getLLMProvider } from './llm-providers'
 
 const CONFIDENCE_THRESHOLD = 0.6
-const MOTION_ID_PATTERN = /\b[A-Z]{1,3}\d+\.\d+\b/i
+// Motion ID pattern: matches both "2024.CC25.1" (full) and "CC25.1" (short) formats
+const MOTION_ID_PATTERN = /\b(?:20\d{2}\.)?[A-Z]{1,3}\d+\.\d+\b/i
 
 const TOOL_INDEX = new Map(TOOLS.map((tool) => [tool.name, tool]))
 
@@ -82,6 +83,12 @@ Q: "Tell me more about TransformTO Net Zero Strategy"
 A: {"tool": "web_lookup", "params": {"query": "TransformTO Net Zero Strategy"}, "confidence": 0.6}
 Q: "Who is Gord Perks?"
 A: {"tool": "web_lookup", "params": {"query": "Toronto City Councillor Gord Perks"}, "confidence": 0.7}
+Q: "Who voted against 2024.CC25.1?"
+A: {"tool": "get_motion_details", "params": {"motionId": "2024.CC25.1"}, "confidence": 0.9}
+Q: "What was motion 2025.TTC11.8 about?"
+A: {"tool": "get_motion_details", "params": {"motionId": "2025.TTC11.8"}, "confidence": 0.9}
+Q: "Show me the votes on the housing motion CC32.5"
+A: {"tool": "get_motion_details", "params": {"motionId": "CC32.5"}, "confidence": 0.85}
 Q: "What motions did Jamaal Myers vote on?"
 A: {"tool": null, "params": {}, "confidence": 0}
 Q: "Show me councillor Brad Bradford's voting record"
