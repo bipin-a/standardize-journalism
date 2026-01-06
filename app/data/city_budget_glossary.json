@@ -1,0 +1,588 @@
+[
+  {
+    "id": "general-assistance",
+    "term": "General Assistance",
+    "definition": "Provincial social assistance programs administered by the City (e.g., Ontario Works and related benefits).",
+    "matches": [
+      "general assistance"
+    ]
+  },
+  {
+    "id": "assistance-to-seniors",
+    "term": "Assistance to Seniors",
+    "definition": "Programs that support seniors, including housing and income support services.",
+    "matches": [
+      "assistance to seniors"
+    ]
+  },
+  {
+    "id": "taxation-own-purposes",
+    "term": "Taxation - Own Purposes",
+    "definition": "Municipal taxes set by the City, primarily property taxes and related levies.",
+    "matches": [
+      "taxation - own purposes"
+    ]
+  },
+  {
+    "id": "ontario-conditional-grants",
+    "term": "Ontario Conditional Grants",
+    "definition": "Provincial transfers earmarked for specific programs or services.",
+    "matches": [
+      "ontario conditional grants"
+    ]
+  },
+  {
+    "id": "canada-conditional-grants",
+    "term": "Canada Conditional Grants",
+    "definition": "Federal transfers earmarked for specific programs or services.",
+    "matches": [
+      "canada conditional grants"
+    ]
+  },
+  {
+    "id": "deferred-revenue-earned",
+    "term": "Deferred Revenue Earned",
+    "definition": "Revenue previously received but recognized when conditions are met (e.g., development charges).",
+    "matches": [
+      "deferred revenue earned"
+    ]
+  },
+  {
+    "id": "municipal-land-transfer-tax",
+    "term": "Municipal Land Transfer Tax",
+    "definition": "City tax on real estate transactions within Toronto.",
+    "matches": [
+      "municipal land transfer tax"
+    ]
+  },
+  {
+    "id": "investment-income",
+    "term": "Investment Income",
+    "definition": "Interest and returns on City reserves and investments.",
+    "matches": [
+      "investment income"
+    ]
+  },
+  {
+    "id": "rents-concessions-franchises",
+    "term": "Rents, Concessions and Franchises",
+    "definition": "Revenue from leases, concessions, and franchise agreements.",
+    "matches": [
+      "rents, concessions and franchises"
+    ]
+  },
+  {
+    "id": "donated-tangible-capital-assets",
+    "term": "Donated Tangible Capital Assets",
+    "definition": "Non-cash infrastructure or assets contributed to the City.",
+    "matches": [
+      "donated tangible capital assets"
+    ]
+  },
+  {
+    "id": "vacant-home-tax",
+    "term": "Vacant Home Tax",
+    "definition": "Tax on residential properties left vacant.",
+    "matches": [
+      "vacant home tax"
+    ]
+  },
+  {
+    "id": "gaming-casino-revenues",
+    "term": "Gaming and Casino Revenues",
+    "definition": "City share of revenues from gaming and casino operations.",
+    "matches": [
+      "gaming and casino revenues"
+    ]
+  },
+  {
+    "id": "revenue-other-municipalities-capital-assets",
+    "term": "Revenue From Other Municipalities for Tangible Capital Assets",
+    "definition": "Transfers from other municipalities for shared capital assets or joint projects.",
+    "matches": [
+      "revenue from other municipalities for tangible capital assets"
+    ]
+  },
+  {
+    "id": "canada-community-building-fund",
+    "term": "Canada Community-Building Fund",
+    "definition": "Federal transfer (formerly Gas Tax) for infrastructure and community investments.",
+    "matches": [
+      "canada community",
+      "community - building fund"
+    ]
+  },
+  {
+    "id": "canada-grants-capital-assets",
+    "term": "Canada Grants for Tangible Capital Assets",
+    "definition": "Federal grants for capital assets and infrastructure projects.",
+    "matches": [
+      "canada grants for tangible capital assets"
+    ]
+  },
+  {
+    "id": "ontario-grants-capital-assets",
+    "term": "Ontario Grants for Tangible Capital Assets",
+    "definition": "Provincial grants for capital assets and infrastructure projects.",
+    "matches": [
+      "ontario grants for tangible capital assets"
+    ]
+  },
+  {
+    "id": "contributions-non-consolidated",
+    "term": "Contributions From Non-consolidated Entities",
+    "definition": "Funding from organizations not included in the City's consolidated financial statements.",
+    "matches": [
+      "contributions from non-consolidated entities"
+    ]
+  },
+  {
+    "id": "gain-loss-sale-capital-assets",
+    "term": "Gain (Loss) on Sale of Land & Capital Assets",
+    "definition": "Net gains or losses from selling land or capital assets.",
+    "matches": [
+      "gain (loss) on sale of land & capital assets"
+    ]
+  },
+  {
+    "id": "interest-reserves",
+    "term": "Interest Earned on Reserves and Reserve Funds",
+    "definition": "Interest earned on City reserves and reserve funds.",
+    "matches": [
+      "interest earned on reserves and reserve funds"
+    ]
+  },
+  {
+    "id": "licences-permits",
+    "term": "Licences and Permits",
+    "definition": "Fees collected for licenses, permits, and approvals.",
+    "matches": [
+      "licences and permits"
+    ]
+  },
+  {
+    "id": "other-fines",
+    "term": "Other Fines",
+    "definition": "Fines that do not fit into other specified categories.",
+    "matches": [
+      "other fines"
+    ]
+  },
+  {
+    "id": "gben-revenues",
+    "term": "Other Revenues from Government Business Enterprise",
+    "definition": "Earnings from City-owned business enterprises beyond regular dividends.",
+    "matches": [
+      "other revenues from government business enterprise"
+    ]
+  },
+  {
+    "id": "payments-in-lieu",
+    "term": "Payments-In-Lieu of Taxation",
+    "definition": "Payments from tax-exempt properties in lieu of property taxes.",
+    "matches": [
+      "payments-in-lieu of taxation"
+    ]
+  },
+  {
+    "id": "penalties-interest-taxes",
+    "term": "Penalties and Interest on Taxes",
+    "definition": "Late fees, penalties, and interest charged on tax balances.",
+    "matches": [
+      "penalties and interest on taxes"
+    ]
+  },
+  {
+    "id": "provincial-gas-tax-funding",
+    "term": "Provincial Gas Tax Funding",
+    "definition": "Provincial gas tax transfers used for transit or infrastructure.",
+    "matches": [
+      "provincial gas tax funding"
+    ]
+  },
+  {
+    "id": "provincial-gas-tax-capital",
+    "term": "Provincial Gas Tax for Transit Capital Expenses",
+    "definition": "Gas tax transfers used for transit capital projects.",
+    "matches": [
+      "provincial gas tax for transit capital expenses"
+    ]
+  },
+  {
+    "id": "provincial-gas-tax-operating",
+    "term": "Provincial Gas Tax for Transit Operating Expenses",
+    "definition": "Gas tax transfers used for transit operating costs.",
+    "matches": [
+      "provincial gas tax for transit operating expenses"
+    ]
+  },
+  {
+    "id": "poa-revenue",
+    "term": "Provincial Offences Act (POA) Revenue",
+    "definition": "Administration of provincial offences (e.g., traffic tickets), including courts, enforcement, and related fees.",
+    "matches": [
+      "provincial offences act (poa) municipality which administers poa only",
+      "provincial offences act"
+    ]
+  },
+  {
+    "id": "revenue-other-municipalities",
+    "term": "Revenue From Other Municipalities",
+    "definition": "Transfers or recoveries from other municipalities.",
+    "matches": [
+      "revenue from other municipalities"
+    ]
+  },
+  {
+    "id": "sales-publications-equipment",
+    "term": "Sale of Publications, Equipment, etc.",
+    "definition": "Revenue from selling publications, equipment, or materials.",
+    "matches": [
+      "sale of publications, equipment, etc."
+    ]
+  },
+  {
+    "id": "transient-accommodation-tax",
+    "term": "Transient Accommodation Tax",
+    "definition": "Hotel tax collected on short-term accommodations.",
+    "matches": [
+      "transient accommodation tax"
+    ]
+  },
+  {
+    "id": "ambulance-dispatch",
+    "term": "Ambulance Dispatch",
+    "definition": "Emergency call intake and dispatch for paramedic services.",
+    "matches": [
+      "ambulance dispatch"
+    ]
+  },
+  {
+    "id": "ambulance-services",
+    "term": "Ambulance Services",
+    "definition": "Paramedic operations and emergency medical response.",
+    "matches": [
+      "ambulance services"
+    ]
+  },
+  {
+    "id": "building-permit-inspection",
+    "term": "Building Permit and Inspection Services",
+    "definition": "Building permits, inspections, and code enforcement.",
+    "matches": [
+      "building permit and inspection services"
+    ]
+  },
+  {
+    "id": "child-care-early-years",
+    "term": "Child Care and Early Years Learning",
+    "definition": "Child care services and early learning programs.",
+    "matches": [
+      "child care and early years learning"
+    ]
+  },
+  {
+    "id": "commercial-industrial",
+    "term": "Commercial and Industrial",
+    "definition": "Services related to commercial and industrial activity.",
+    "matches": [
+      "commercial and industrial"
+    ]
+  },
+  {
+    "id": "conservation-authority",
+    "term": "Conservation Authority",
+    "definition": "Funding for conservation authority programs and watershed management.",
+    "matches": [
+      "conservation authority"
+    ]
+  },
+  {
+    "id": "corporate-management",
+    "term": "Corporate Management",
+    "definition": "City-wide management and corporate administration.",
+    "matches": [
+      "corporate management"
+    ]
+  },
+  {
+    "id": "court-security",
+    "term": "Court Security",
+    "definition": "Security for courts and judicial facilities.",
+    "matches": [
+      "court security"
+    ]
+  },
+  {
+    "id": "cultural-services",
+    "term": "Cultural Services",
+    "definition": "Arts and cultural programs and services.",
+    "matches": [
+      "cultural services"
+    ]
+  },
+  {
+    "id": "emergency-measures",
+    "term": "Emergency Measures",
+    "definition": "Emergency management and preparedness.",
+    "matches": [
+      "emergency measures"
+    ]
+  },
+  {
+    "id": "fire-services",
+    "term": "Fire",
+    "definition": "Fire services operations.",
+    "matches": [
+      "fire"
+    ]
+  },
+  {
+    "id": "governance",
+    "term": "Governance",
+    "definition": "Council operations and governance functions.",
+    "matches": [
+      "governance"
+    ]
+  },
+  {
+    "id": "libraries",
+    "term": "Libraries",
+    "definition": "Public library operations.",
+    "matches": [
+      "libraries"
+    ]
+  },
+  {
+    "id": "museums",
+    "term": "Museums",
+    "definition": "City museum operations and services.",
+    "matches": [
+      "museums"
+    ]
+  },
+  {
+    "id": "parking",
+    "term": "Parking",
+    "definition": "Parking operations and services.",
+    "matches": [
+      "parking"
+    ]
+  },
+  {
+    "id": "parks",
+    "term": "Parks",
+    "definition": "Parks operations and maintenance.",
+    "matches": [
+      "parks"
+    ]
+  },
+  {
+    "id": "planning-zoning",
+    "term": "Planning and Zoning",
+    "definition": "City planning, zoning, and development review.",
+    "matches": [
+      "planning and zoning"
+    ]
+  },
+  {
+    "id": "police",
+    "term": "Police",
+    "definition": "Police services.",
+    "matches": [
+      "police"
+    ]
+  },
+  {
+    "id": "prisoner-transportation",
+    "term": "Prisoner Transportation",
+    "definition": "Transport for detainees and court-related custody.",
+    "matches": [
+      "prisoner transportation"
+    ]
+  },
+  {
+    "id": "program-support",
+    "term": "Program Support",
+    "definition": "Program administration and shared support services.",
+    "matches": [
+      "program support"
+    ]
+  },
+  {
+    "id": "protective-inspection",
+    "term": "Protective Inspection and Control",
+    "definition": "Inspection and enforcement for public safety and compliance.",
+    "matches": [
+      "protective inspection and control"
+    ]
+  },
+  {
+    "id": "public-health-services",
+    "term": "Public Health Services",
+    "definition": "Public health programs and services.",
+    "matches": [
+      "public health services"
+    ]
+  },
+  {
+    "id": "public-housing",
+    "term": "Public Housing",
+    "definition": "Public housing operations and supports.",
+    "matches": [
+      "public housing"
+    ]
+  },
+  {
+    "id": "recreation-facilities-other",
+    "term": "Recreation Facilities - All Other",
+    "definition": "Operations for recreation facilities not listed elsewhere.",
+    "matches": [
+      "recreation facilities - all other"
+    ]
+  },
+  {
+    "id": "recreation-facilities-golf",
+    "term": "Recreation Facilities - Golf Course, Marina, Ski Hill",
+    "definition": "Operations for city golf courses, marinas, and ski hill.",
+    "matches": [
+      "recreation facilities - golf course, marina, ski hill"
+    ]
+  },
+  {
+    "id": "recreation-programs",
+    "term": "Recreation Programs",
+    "definition": "Recreation programming and activities.",
+    "matches": [
+      "recreation programs"
+    ]
+  },
+  {
+    "id": "roads-bridges",
+    "term": "Roads - Bridges and Culverts",
+    "definition": "Bridge and culvert maintenance and operations.",
+    "matches": [
+      "roads - bridges and culverts"
+    ]
+  },
+  {
+    "id": "roads-paved",
+    "term": "Roads - Paved",
+    "definition": "Paved road maintenance and operations.",
+    "matches": [
+      "roads - paved"
+    ]
+  },
+  {
+    "id": "roads-traffic",
+    "term": "Roads - Traffic Operations & Roadside",
+    "definition": "Traffic operations, signals, and roadside services.",
+    "matches": [
+      "roads - traffic operations & roadside"
+    ]
+  },
+  {
+    "id": "solid-waste-collection",
+    "term": "Solid Waste Collection",
+    "definition": "Residential and commercial waste collection.",
+    "matches": [
+      "solid waste collection"
+    ]
+  },
+  {
+    "id": "solid-waste-disposal",
+    "term": "Solid Waste Disposal",
+    "definition": "Waste disposal operations.",
+    "matches": [
+      "solid waste disposal"
+    ]
+  },
+  {
+    "id": "street-lighting",
+    "term": "Street Lighting",
+    "definition": "Streetlight operations and maintenance.",
+    "matches": [
+      "street lighting"
+    ]
+  },
+  {
+    "id": "transit-conventional",
+    "term": "Transit - Conventional",
+    "definition": "Conventional public transit operations.",
+    "matches": [
+      "transit - conventional"
+    ]
+  },
+  {
+    "id": "urban-storm-sewer",
+    "term": "Urban Storm Sewer System",
+    "definition": "Storm sewer system operations and maintenance.",
+    "matches": [
+      "urban storm sewer system"
+    ]
+  },
+  {
+    "id": "waste-diversion",
+    "term": "Waste Diversion",
+    "definition": "Recycling and organics diversion programs.",
+    "matches": [
+      "waste diversion"
+    ]
+  },
+  {
+    "id": "wastewater-collection",
+    "term": "Wastewater Collection / Conveyance",
+    "definition": "Wastewater collection and conveyance systems.",
+    "matches": [
+      "wastewater collection / conveyance"
+    ]
+  },
+  {
+    "id": "wastewater-treatment",
+    "term": "Wastewater Treatment & Disposal",
+    "definition": "Wastewater treatment plants and disposal.",
+    "matches": [
+      "wastewater treatment & disposal"
+    ]
+  },
+  {
+    "id": "water-distribution",
+    "term": "Water Distribution / Transmission",
+    "definition": "Water distribution and transmission systems.",
+    "matches": [
+      "water distribution / transmission"
+    ]
+  },
+  {
+    "id": "water-treatment",
+    "term": "Water Treatment",
+    "definition": "Water treatment plants and processes.",
+    "matches": [
+      "water treatment"
+    ]
+  },
+  {
+    "id": "winter-control-roads",
+    "term": "Winter Control - Except Sidewalks, Parking Lots",
+    "definition": "Road winter maintenance such as plowing and salting.",
+    "matches": [
+      "winter control - except sidewalks, parking lots"
+    ]
+  },
+  {
+    "id": "winter-control-sidewalks",
+    "term": "Winter Control - Sidewalks, Parking Lots Only",
+    "definition": "Winter maintenance for sidewalks and parking lots.",
+    "matches": [
+      "winter control - sidewalks, parking lots only"
+    ]
+  },
+  {
+    "id": "other",
+    "term": "Other",
+    "definition": "Miscellaneous items not classified elsewhere. In the flow view, \"Other\" also groups any line items that do not match a bucket rule.",
+    "matches": [
+      "other"
+    ]
+  }
+]
