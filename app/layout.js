@@ -1,3 +1,6 @@
+import ChatWidget from './components/ChatWidget'
+import SiteHeader from './components/SiteHeader'
+
 export const metadata = {
   title: 'Toronto Money Flow',
   description: 'Track Toronto municipal spending',
@@ -12,7 +15,18 @@ export default function RootLayout({ children }) {
         backgroundColor: '#f5f5f5',
         minHeight: '100vh'
       }}>
-        {children}
+        <SiteHeader />
+        <main
+          style={{
+            maxWidth: '900px',
+            margin: '0 auto',
+            backgroundColor: 'white',
+            minHeight: '100vh'
+          }}
+        >
+          {children}
+        </main>
+        <ChatWidget mode="floating" />
       </body>
     </html>
   )

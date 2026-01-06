@@ -1,69 +1,7 @@
 import { loadProcessedFile } from '../_lib/data-loader'
+import { CATEGORY_RULES } from '../../data/budget-category-rules'
 
 export const revalidate = 3600
-
-const CATEGORY_RULES = [
-  {
-    name: 'Transit',
-    plannedKeywords: ['transit commission', 'transit expansion', 'ttc', 'transit'],
-    actualKeywords: ['transit']
-  },
-  {
-    name: 'Roads & Traffic',
-    plannedKeywords: ['transportation services', 'road', 'roads', 'traffic', 'winter control', 'street lighting', 'parking'],
-    actualKeywords: ['roads', 'traffic', 'winter control', 'street lighting', 'parking']
-  },
-  {
-    name: 'Police',
-    plannedKeywords: ['police'],
-    actualKeywords: ['police']
-  },
-  {
-    name: 'Fire',
-    plannedKeywords: ['fire'],
-    actualKeywords: ['fire']
-  },
-  {
-    name: 'Paramedic',
-    plannedKeywords: ['paramedic'],
-    actualKeywords: ['paramedic']
-  },
-  {
-    name: 'Public Health',
-    plannedKeywords: ['public health'],
-    actualKeywords: ['public health', 'health']
-  },
-  {
-    name: 'Parks & Recreation',
-    plannedKeywords: ['parks', 'recreation', 'forestry'],
-    actualKeywords: ['parks', 'recreation']
-  },
-  {
-    name: 'Housing & Shelter',
-    plannedKeywords: ['housing', 'shelter'],
-    actualKeywords: ['housing', 'shelter']
-  },
-  {
-    name: 'Solid Waste',
-    plannedKeywords: ['solid waste'],
-    actualKeywords: ['solid waste', 'waste']
-  },
-  {
-    name: 'Water',
-    plannedKeywords: ['water'],
-    actualKeywords: ['water']
-  },
-  {
-    name: 'Libraries',
-    plannedKeywords: ['library'],
-    actualKeywords: ['library']
-  },
-  {
-    name: 'Corporate & Governance',
-    plannedKeywords: ['governance', 'corporate', 'city manager', 'program support', 'finance'],
-    actualKeywords: ['governance', 'corporate', 'program support']
-  }
-]
 
 const normalizeText = (value) => (value ? String(value).toLowerCase() : '')
 
@@ -243,18 +181,28 @@ export async function GET(request) {
     let plannedFellBack = false
     let actualFellBack = false
 
+    if (!plannedYearTarget && plannedRecords) {
+      plannedYear = pickLatestYear(plannedRecords)
+      plannedRecords = filterByYear(plannedRecords, plannedYear)
+    }
+
+    if (!actualYearTarget && actualRecords) {
+      actualYear = pickLatestYear(actualRecords)
+      actualRecords = filterByYear(actualRecords, actualYear)
+    }
+
     if (!plannedRecords) {
       const plannedLatest = await loadProcessedFile('operating-budget', null, { fallbackToLatest: true })
       plannedYear = pickLatestYear(plannedLatest)
       plannedRecords = filterByYear(plannedLatest, plannedYear)
-      plannedFellBack = true
+      plannedFellBack = Boolean(plannedYearTarget)
     }
 
     if (!actualRecords) {
       const actualLatest = await loadProcessedFile('money-flow', null, { fallbackToLatest: true })
       actualYear = pickLatestYear(actualLatest)
       actualRecords = filterByYear(actualLatest, actualYear)
-      actualFellBack = true
+      actualFellBack = Boolean(actualYearTarget)
     }
 
     const capitalRecords = await loadProcessedFile('capital', null, { fallbackToLatest: true })

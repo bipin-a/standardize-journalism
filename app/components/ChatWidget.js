@@ -153,7 +153,7 @@ export default function ChatWidget({ mode = 'floating' }) {
         <div style={styles.headerContent}>
           <span style={styles.headerIcon}>💬</span>
           <div>
-            <div style={styles.headerTitle}>Toronto Money Flow Assistant</div>
+            <div style={styles.headerTitle}>Toronto Civic Insights Assistant</div>
             <div style={styles.headerSubtitle}>Ask me about the budget, projects, or council</div>
           </div>
         </div>
@@ -192,6 +192,7 @@ export default function ChatWidget({ mode = 'floating' }) {
             message={msg.text}
             isUser={msg.isUser}
             sources={msg.sources}
+            metadata={msg.metadata}
           />
         ))}
 

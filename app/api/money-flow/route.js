@@ -165,7 +165,8 @@ const buildTopBottomGroups = (records) => {
   return {
     total,
     topGroups: addPercentages(topGroups),
-    bottomGroups: addPercentages(bottomGroups)
+    bottomGroups: addPercentages(bottomGroups),
+    allGroups: addPercentages(sorted)
   }
 }
 
@@ -226,9 +227,16 @@ export async function GET(request) {
     // Try loading pre-aggregated gold summary first
     try {
       const goldSummary = await loadMoneyFlowGold(year, goldIndex)
-      if (goldSummary && goldSummary.revenue) {
+      const hasAllGroups = Array.isArray(goldSummary?.revenue?.allGroups)
+        && Array.isArray(goldSummary?.expenditure?.allGroups)
+
+      if (goldSummary && goldSummary.revenue && goldSummary.expenditure && hasAllGroups) {
         // Gold file exists and has expected shape - return it directly
         return Response.json(goldSummary)
+      }
+
+      if (goldSummary && !hasAllGroups) {
+        console.warn(`Gold summary missing allGroups for ${year}; falling back to aggregation.`)
       }
     } catch (goldError) {
       console.warn(`Gold summary unavailable for ${year}, falling back to aggregation:`, goldError.message)

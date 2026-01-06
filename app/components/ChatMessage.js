@@ -39,7 +39,18 @@ const shortenUrl = (path) => {
   }
 }
 
-export default function ChatMessage({ message, isUser, sources = [], isLoading = false }) {
+const buildMethodLabel = (metadata) => {
+  if (!metadata) return null
+  if (metadata.retrievalType === 'tool') {
+    return 'Method: Deterministic tool'
+  }
+  if (metadata.retrievalType === 'rag') {
+    return metadata.ragStrategy ? `Method: RAG (${metadata.ragStrategy})` : 'Method: RAG'
+  }
+  return null
+}
+
+export default function ChatMessage({ message, isUser, sources = [], isLoading = false, metadata = null }) {
   if (isLoading) {
     return (
       <div style={styles.messageWrapper}>
@@ -54,6 +65,8 @@ export default function ChatMessage({ message, isUser, sources = [], isLoading =
     )
   }
 
+  const methodLabel = !isUser ? buildMethodLabel(metadata) : null
+
   return (
     <div style={styles.messageWrapper}>
       <div style={{
@@ -63,6 +76,12 @@ export default function ChatMessage({ message, isUser, sources = [], isLoading =
         <div style={styles.messageText}>
           {message}
         </div>
+
+        {methodLabel && (
+          <div style={styles.methodBadge}>
+            {methodLabel}
+          </div>
+        )}
 
         {/* Show sources for assistant messages */}
         {!isUser && sources && sources.length > 0 && (
@@ -176,6 +195,20 @@ const styles = {
     textTransform: 'uppercase',
     color: '#6b7280',
     letterSpacing: '0.5px'
+  },
+
+  methodBadge: {
+    marginTop: '10px',
+    alignSelf: 'flex-start',
+    fontSize: '10px',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: '0.4px',
+    color: '#6b7280',
+    backgroundColor: '#e5e7eb',
+    borderRadius: '999px',
+    padding: '2px 8px',
+    width: 'fit-content'
   },
 
   source: {

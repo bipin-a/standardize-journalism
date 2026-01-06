@@ -44,7 +44,7 @@ jobs:
       - name: Run ETL Pipeline
         run: |
           chmod +x scripts/publish_data_gcs.sh
-          CREATE_BUCKET=0 MAKE_PUBLIC=0 ./scripts/publish_data_gcs.sh
+          CREATE_BUCKET=0 MAKE_PUBLIC=0 ./scripts/publish_data_gcs.sh all
 
       - name: Upload artifacts on failure
         if: failure()

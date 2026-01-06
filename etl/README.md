@@ -86,88 +86,26 @@ Dependencies:
 
 ## Usage
 
-### Manual Runs
+### Unified Runner (recommended)
 
-Each ETL can be run independently:
-
-```bash
-# Capital budget by ward (XLSX download + parsing)
-uv run --with-requirements etl/requirements.txt -- \
-  python etl/capital_by_ward_etl.py \
-  --output data/processed/capital_by_ward.csv \
-  --json-output data/processed/capital_by_ward.json
-
-# Financial return (revenue + expenses, multiple XLSX resources)
-uv run --with-requirements etl/requirements.txt -- \
-  python etl/financial_return_etl.py \
-  --output data/processed/financial_return.json
-
-# Operating budget summary (XLSX download + parsing)
-uv run --with-requirements etl/requirements.txt -- \
-  python etl/operating_budget_etl.py \
-  --output data/processed/operating_budget.json
-
-# Council voting (datastore API with pagination)
-uv run --with-requirements etl/requirements.txt -- \
-  python etl/council_voting_etl.py \
-  --output data/processed/council_voting.json
-
-# Lobbyist registry (ZIP download with XML parsing)
-uv run --with-requirements etl/requirements.txt -- \
-  python etl/lobbyist_registry_etl.py \
-  --output data/processed/lobbyist_activity.json
-
-# Generate gold summaries from existing processed files
-uv run --with-requirements etl/requirements.txt -- \
-  python etl/generate_gold.py
-```
-
-### Gold File Generation
-
-After processed files exist, generate pre-aggregated API summaries:
+Use the bash script to run the ETL pipeline with uv (the supported path):
 
 ```bash
-# Generate all gold summaries (from existing processed files)
-uv run --with-requirements etl/requirements.txt -- python etl/generate_gold.py
+# Ingest only: processed tier + upload
+./scripts/publish_data_gcs.sh ingest
+
+# Gold only: derived summaries + upload
+./scripts/publish_data_gcs.sh gold
+
+# End-to-end: ingest + gold + uploads
+./scripts/publish_data_gcs.sh all
 ```
 
-This creates:
-- `data/gold/money-flow/{year}.json` - One file per fiscal year (~4KB each)
-- `data/gold/money-flow/index.json` - Available years + per-year URLs
-- `data/gold/money-flow/trends.json` - Cross-year totals and label breakdowns
-- `data/gold/capital/{year}.json` - One file per fiscal year (~9KB each)
-- `data/gold/capital/index.json` - Available years + per-year URLs
-- `data/gold/capital/trends.json` - Cross-year totals, ward, and category breakdowns
-- `data/gold/council-decisions/summary.json` - Rolling 365-day summary (~14KB)
-- `data/gold/council-decisions/{year}.json` - Per-year summaries (~14KB)
-- `data/gold/council-decisions/index.json` - Index of available years
-- `data/gold/council-decisions/trends.json` - Cross-year totals for motions and meetings
+Environment flags:
+- `CREATE_BUCKET=1` create the bucket if missing
+- `MAKE_PUBLIC=1` grant public read access
 
-**When to run**: After ETL scripts complete, or manually when testing API response shapes locally.
-
-**How it works**: Re-implements API aggregation logic in Python to match exact response shapes from `/api/money-flow`, `/api/capital-by-ward`, and `/api/council-decisions`.
-
-### Command-Line Overrides
-
-All scripts support CLI overrides (config provides defaults):
-
-```bash
-# Override package ID
-python etl/capital_by_ward_etl.py --package-id custom-package-id
-
-# Override base year for 10-year plan data
-python etl/capital_by_ward_etl.py --base-year 2025
-
-# Filter to specific fiscal years
-python etl/financial_return_etl.py --fiscal-years 2024 2023 2022
-
-# Filter to recent months
-python etl/council_voting_etl.py --recent-months 6
-python etl/lobbyist_registry_etl.py --recent-months 6
-
-# Override timeouts
-python etl/financial_return_etl.py --ckan-timeout 60 --download-timeout 120
-```
+Direct calls to individual ETL scripts are intentionally undocumented to keep a single, consistent workflow.
 
 ### Automated Runs (GitHub Actions)
 
@@ -335,18 +273,16 @@ There is no full schema validation beyond these checks.
 
 ## Publishing to GCS
 
-The `scripts/publish_data_gcs.sh` wrapper runs `etl/publish_data_gcs.py`, which:
+Use the unified runner (single supported entrypoint):
 
-1. Runs all ETL scripts
-2. Downloads ward boundaries GeoJSON
-3. Builds a council decisions summary JSON
-4. Extracts year ranges from outputs
-5. Uploads JSON to Google Cloud Storage
+1. `ingest` runs ETL + uploads processed data
+2. `gold` builds summaries + uploads gold data
+3. `all` runs end-to-end (ingest + gold + uploads)
 
 Manual run:
 ```bash
 chmod +x scripts/publish_data_gcs.sh
-CREATE_BUCKET=0 MAKE_PUBLIC=0 ./scripts/publish_data_gcs.sh
+CREATE_BUCKET=0 MAKE_PUBLIC=0 ./scripts/publish_data_gcs.sh all
 ```
 
 ## Troubleshooting
@@ -356,20 +292,19 @@ CREATE_BUCKET=0 MAKE_PUBLIC=0 ./scripts/publish_data_gcs.sh
 The ETL extracted data but could not find any `fiscal_year` values. Check:
 - Excel column headers match expected patterns (Year 1-10 or 2024-2033)
 - Resource name contains year range (e.g., "2024-2033")
-- Provide `--base-year` explicitly
+- Update the parser or dataset source if the year range format changed
 
 ### "Could not detect column"
 
 Column detection failed. Check:
 - Excel schema changes in the source file
-- `--sheet-name` override to use the correct sheet
+- Sheet names match expected patterns in the source file
 
 ### "No records parsed from any resources"
 
 No data was extracted. Check:
 - Package ID is correct in config.yaml
 - XLSX resources exist in the package
-- `--fiscal-years` filter is not too restrictive
 
 ## Development
 

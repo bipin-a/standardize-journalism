@@ -79,12 +79,13 @@ Procurement datasets are read live via CKAN in `/api/metric`.
 
 ### 5.1 ETL Orchestration
 
-`etl/publish_data_gcs.py` runs all ETL scripts and uploads outputs to GCS.
-It also builds a small council summary JSON for the UI.
+All ETL runs go through `scripts/publish_data_gcs.sh` (enforces uv).
+It wraps `etl/publish_data_gcs.py`, runs the ETL scripts, and uploads outputs to GCS.
+It also builds the council summary JSON for the UI.
 
-Wrapper:
+Example:
 ```
-scripts/publish_data_gcs.sh
+scripts/publish_data_gcs.sh all
 ```
 
 ### 5.2 Automation

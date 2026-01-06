@@ -5,10 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node scripts/smoke.js"
   },
   "dependencies": {
-    "next": "14.2.0",
+    "d3-sankey": "^0.12.3",
+    "next": "^14.2.35",
     "react": "18.3.0",
     "react-dom": "18.3.0"
   }

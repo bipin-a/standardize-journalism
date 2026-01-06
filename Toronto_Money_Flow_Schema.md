@@ -397,6 +397,9 @@ Council trends (`data/gold/council-decisions/trends.json`) are compact per-year 
     ],
     "bottomGroups": [
       { "label": "Other", "amount": 120000000, "percentage": 1.1 }
+    ],
+    "allGroups": [
+      { "label": "Property Taxes", "amount": 5200000000, "percentage": 48.1 }
     ]
   },
   "expenditure": {
@@ -408,6 +411,9 @@ Council trends (`data/gold/council-decisions/trends.json`) are compact per-year 
     ],
     "bottomGroups": [
       { "label": "Other", "amount": 90000000, "percentage": 0.8 }
+    ],
+    "allGroups": [
+      { "label": "Transportation", "amount": 3800000000, "percentage": 35.5 }
     ]
   },
   "balance": {
@@ -427,6 +433,7 @@ Council trends (`data/gold/council-decisions/trends.json`) are compact per-year 
 Notes:
 - `total`/`lineItemTotal` are sums of filtered line items (summary/rollup rows removed).
 - `reportedTotal` and `balance.reported` come from FIR summary lines (PLUS: Total Revenues / LESS: Total Expenses) when available.
+- `allGroups` is the full list of positive line items with percentages, sorted by amount descending.
 
 ### 2.4 /api/council-decisions
 
