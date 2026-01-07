@@ -20,19 +20,16 @@ import { canonicalizeCouncillorName } from './councillor-canonicalizer'
 
 // Year extraction pattern
 // Mechanical extraction patterns - for structured data only
+// Structured extraction patterns (legitimate - extract formatted data, not semantics)
 const YEAR_PATTERN = /\b(20\d{2})\b/g
 const MULTI_YEAR_PATTERN = /\b(?:last|past|previous)\s+(\d+)\s+years?\b/i
-const COUNCIL_KEYWORDS = ['council', 'motion', 'motions', 'vote', 'votes', 'decision', 'decisions', 'meeting', 'meetings', 'councillor']
-// Motion ID pattern: matches both "2024.CC25.1" (full) and "CC25.1" (short) formats
 const MOTION_ID_PATTERN = /\b(?:20\d{2}\.)?[A-Z]{1,3}\d+\.\d+\b/i
-const MOTION_TITLE_HINT_PATTERN = /\b(motion|agenda item|agenda|council motion)\b/i
-const RECENT_KEYWORDS = ['recent', 'recently', 'latest', 'most recent']
-const GLOSSARY_QUERY_PATTERN = /\b(what is|define|meaning of|what does .* mean|explain)\b/i
 const MOTION_TITLE_PATTERNS = [
   /\b(?:motion|agenda item)\s+(?:titled|called|about|on|regarding)\s+(.+)/i,
   /\b(?:motion|agenda item)\s*:\s*(.+)/i,
   /\b(?:motion|agenda item)\s+(.+)/i
 ]
+const MOTION_TITLE_HINT_PATTERN = /\b(motion|agenda item|agenda|council motion)\b/i
 async function fetchJson(url, label) {
   const response = await fetch(url, { cache: 'no-store' })
   if (!response.ok) {
@@ -78,85 +75,41 @@ export async function buildContext(message, options = {}) {
   let entities = parseEntities(message)
 
   // Entity enhancement:
-  // - Keep ward/year regex extraction (fast, reliable)
-  // - Canonicalize councillor names using processed council voting data
-  // - If extraction is uncertain, use an LLM to extract structured entities
-  const queryTypeHint = inferQueryType(message)
-  const isCouncilLike = queryTypeHint === 'council' || isCouncilQuestion(message)
+  // 1. Regex extraction already done (ward, year) - fast and reliable
+  // 2. If missing key entities, use LLM extraction (no keyword heuristics)
+  // 3. Canonicalize councillor names against real data
 
-  if (isCouncilLike) {
+  const missingKeyEntities = !entities.councillor && !entities.category && !entities.program && !entities.keyword && !entities.ward
+
+  if (missingKeyEntities && String(message || '').trim().length >= 24) {
+    try {
+      const llmEntities = await extractEntitiesWithLLM({ message, history })
+      if (llmEntities) {
+        entities = {
+          ...entities,
+          // Keep deterministic regex extraction when present
+          ward: entities.ward ?? llmEntities.ward,
+          year: entities.year ?? llmEntities.year,
+          category: entities.category ?? llmEntities.category,
+          program: entities.program ?? llmEntities.program,
+          councillor: entities.councillor ?? llmEntities.councillor,
+          keyword: entities.keyword ?? llmEntities.keyword
+        }
+      }
+    } catch (error) {
+      console.warn('LLM entity extraction failed, continuing:', error.message)
+    }
+  }
+
+  // Canonicalize councillor name if present
+  if (entities.councillor) {
     const { names: councillorCandidates } = await getCouncilCouncillorNames(entities.year)
-
-    if (entities.councillor) {
-      const canonical = canonicalizeCouncillorName(entities.councillor, councillorCandidates)
-      if (canonical) {
-        entities = { ...entities, councillor: canonical }
-      }
+    const canonical = canonicalizeCouncillorName(entities.councillor, councillorCandidates)
+    if (canonical) {
+      entities = { ...entities, councillor: canonical }
     }
-
-    const lower = String(message || '').toLowerCase()
-    const looksLikeVotingByPerson =
-      lower.includes('vote') ||
-      lower.includes('voted') ||
-      lower.includes('support') ||
-      lower.includes('oppose') ||
-      lower.includes('opposed') ||
-      lower.includes('councillor')
-
-    const missingKeyEntities = !entities.councillor && !entities.category && !entities.program && !entities.keyword && !entities.ward
-
-    if (looksLikeVotingByPerson && missingKeyEntities) {
-      try {
-        const llmEntities = await extractEntitiesWithLLM({ message, history })
-        if (llmEntities) {
-          const merged = {
-            ...entities,
-            // Keep deterministic ward/year when present
-            ward: entities.ward ?? llmEntities.ward,
-            year: entities.year ?? llmEntities.year,
-            category: entities.category ?? llmEntities.category,
-            program: entities.program ?? llmEntities.program,
-            councillor: entities.councillor ?? llmEntities.councillor,
-            keyword: entities.keyword ?? llmEntities.keyword
-          }
-
-          if (merged.councillor) {
-            const canonical = canonicalizeCouncillorName(merged.councillor, councillorCandidates)
-            merged.councillor = canonical || merged.councillor
-            // Keyword is usually harmful when a councillor is present.
-            merged.keyword = null
-          }
-
-          entities = merged
-        }
-      } catch (error) {
-        console.warn('LLM entity extraction failed, continuing:', error.message)
-      }
-    }
-
-    if (entities.councillor) {
-      entities = { ...entities, keyword: null }
-    }
-  } else {
-    const missingKeyEntities = !entities.category && !entities.program && !entities.keyword && !entities.ward && !entities.councillor
-    if (missingKeyEntities && String(message || '').trim().length >= 24) {
-      try {
-        const llmEntities = await extractEntitiesWithLLM({ message, history })
-        if (llmEntities) {
-          entities = {
-            ...entities,
-            ward: entities.ward ?? llmEntities.ward,
-            year: entities.year ?? llmEntities.year,
-            category: entities.category ?? llmEntities.category,
-            program: entities.program ?? llmEntities.program,
-            councillor: entities.councillor ?? llmEntities.councillor,
-            keyword: entities.keyword ?? llmEntities.keyword
-          }
-        }
-      } catch (error) {
-        console.warn('LLM entity extraction failed, continuing:', error.message)
-      }
-    }
+    // Keyword is usually harmful when councillor is present
+    entities = { ...entities, keyword: null }
   }
   const executeToolCall = async (toolName, params, routing, confidence) => {
     const toolResult = await executeTool(toolName, {
@@ -183,16 +136,7 @@ export async function buildContext(message, options = {}) {
     }
   }
 
-  if (GLOSSARY_QUERY_PATTERN.test(message)) {
-    try {
-      const glossaryResult = await executeToolCall('glossary_lookup', { term: message }, 'heuristic', 1)
-      if (glossaryResult?.toolResult?.result) {
-        return glossaryResult
-      }
-    } catch (error) {
-      console.warn('Glossary lookup failed, falling back:', error.message)
-    }
-  }
+  // Removed GLOSSARY_QUERY_PATTERN heuristic - LLM tool router handles glossary detection
 
   const motionContext = await buildMotionDetailContext(message)
   if (motionContext) {
@@ -223,12 +167,10 @@ export async function buildContext(message, options = {}) {
 
   let context = null
 
-  const wantsRecentCouncil = isCouncilQuestion(message) && RECENT_KEYWORDS.some((keyword) => message.toLowerCase().includes(keyword))
-  if (hasDetailEntities(entities) || wantsRecentCouncil) {
-    const queryType = inferQueryType(message)
-    const detailEntities = wantsRecentCouncil
-      ? { ...entities, keyword: null }
-      : entities
+  // If we have extracted entities (ward, councillor, year, etc.), use filtered retrieval
+  if (hasDetailEntities(entities)) {
+    const queryType = inferQueryType(entities)
+    const detailEntities = entities
     const detailResult = await retrieveDetailData(detailEntities, queryType)
     const detail = detailResult.results || { items: [], totalCount: 0 }
     const results = Array.isArray(detail) ? detail : (detail.items || [])
@@ -284,8 +226,8 @@ export async function buildContext(message, options = {}) {
   }
 
   if (!context) {
-    const queryWithHistory = buildContextualQuery(message, history)
-    const searchResults = await semanticSearch(queryWithHistory, 5, 0.65)
+    // Use semantic search - embeddings already capture context naturally
+    const searchResults = await semanticSearch(message, 5, 0.55)
     if (searchResults.chunks.length > 0) {
       context = {
         data: searchResults.chunks.map((chunk) => chunk.text).join('\n\n---\n\n'),
@@ -298,27 +240,40 @@ export async function buildContext(message, options = {}) {
         resultsCount: searchResults.chunks.length
       }
     } else {
-      const webLookup = await attemptWebLookup({
-        message,
-        history,
-        conversationId,
-        failureReason: searchResults.failureReason
-      })
-      if (webLookup) {
-        return webLookup
-      }
-      const failureReason = searchResults.failureReason || 'no_embeddings_hits'
-      context = {
-        data: '',
-        sources: [],
-        dataTypes: [],
-        year: null,
-        retrievalType: 'rag',
-        ragStrategy: 'embeddings',
-        resultsCount: 0,
-        noAnswer: true,
-        failureReason,
-        failureDetail: searchResults.failureDetail || null
+      // If we can build a multi-year council summary, prefer that over web fallback
+      if (multiYearCouncil) {
+        context = {
+          data: multiYearCouncil.text,
+          sources: multiYearCouncil.sources,
+          dataTypes: ['council-trends'],
+          year: null,
+          retrievalType: 'rag',
+          ragStrategy: 'filters',
+          resultsCount: 1
+        }
+      } else {
+        const webLookup = await attemptWebLookup({
+          message,
+          history,
+          conversationId,
+          failureReason: searchResults.failureReason
+        })
+        if (webLookup) {
+          return webLookup
+        }
+        const failureReason = searchResults.failureReason || 'no_embeddings_hits'
+        context = {
+          data: '',
+          sources: [],
+          dataTypes: [],
+          year: null,
+          retrievalType: 'rag',
+          ragStrategy: 'embeddings',
+          resultsCount: 0,
+          noAnswer: true,
+          failureReason,
+          failureDetail: searchResults.failureDetail || null
+        }
       }
     }
   }
@@ -337,72 +292,23 @@ export async function buildContext(message, options = {}) {
   return context
 }
 
-const FOLLOW_UP_HINTS = [
-  'tell me more',
-  'more about',
-  'what about',
-  'can you expand',
-  'why is that',
-  'how does that',
-  'can you explain'
-]
-
-const isFollowUpMessage = (message = '') => {
-  const text = String(message).toLowerCase()
-  if (!text) return false
-  if (text.length <= 40) return true
-  return FOLLOW_UP_HINTS.some((hint) => text.includes(hint))
-}
-
-const buildContextualQuery = (message, history = []) => {
-  if (!history.length || !isFollowUpMessage(message)) {
-    return message
-  }
-  const lastUser = [...history].reverse().find((entry) => entry.role === 'user')
-  const lastAssistant = [...history].reverse().find((entry) => entry.role === 'assistant')
-  const contextParts = []
-  if (lastUser?.content) {
-    contextParts.push(`Previous question: ${lastUser.content}`)
-  }
-  if (lastAssistant?.content) {
-    contextParts.push(`Previous answer: ${lastAssistant.content}`)
-  }
-  if (!contextParts.length) {
-    return message
-  }
-  return `${message}\n\nContext:\n${contextParts.join('\n')}`
-}
-
-const shouldAttemptWebLookup = (message = '') => {
-  const text = String(message || '').trim()
-  if (!text) return false
-  if (text.length < 6) return false
-  // Don't try web lookup for simple greetings
-  if (/^(hi|hello|thanks|thank you|bye)\b/i.test(text)) return false
-  return true
-}
+// Removed FOLLOW_UP_HINTS and context query building
+// LLM already has conversation history - no need for keyword-based context detection
 
 const attemptWebLookup = async ({ message, history, conversationId }) => {
-  if (!shouldAttemptWebLookup(message)) {
+  // Simple guard: skip very short or greeting messages
+  const text = String(message || '').trim()
+  if (text.length < 6 || /^(hi|hello|thanks|thank you|bye)\b/i.test(text)) {
     return null
   }
-  const query = buildContextualQuery(message, history)
+
   try {
     const webResult = await executeTool('web_lookup', {
-      query,
+      query: message,  // LLM has history context already
       message,
       history,
       conversationId
     })
-    if (!webResult?.result) {
-      return {
-        retrievalType: 'tool',
-        tool: 'web_lookup',
-        toolRouting: 'heuristic',
-        toolRoutingConfidence: 0.7,
-        toolResult: webResult
-      }
-    }
     return {
       retrievalType: 'tool',
       tool: 'web_lookup',
@@ -429,14 +335,15 @@ async function loadCouncilTrends() {
   }
 }
 
-const isCouncilQuestion = (message) => {
-  const lower = message.toLowerCase()
-  return COUNCIL_KEYWORDS.some((keyword) => lower.includes(keyword))
-}
+// Removed isCouncilQuestion - LLM-based routing handles query type detection
 
 const extractYearWindow = (message) => {
   const match = message.match(MULTI_YEAR_PATTERN)
   if (!match) {
+    // Treat vague recency queries as a small multi-year window
+    if (/\b(recent|recently|latest)\b/i.test(message)) {
+      return 3
+    }
     return null
   }
   const parsed = parseInt(match[1], 10)
@@ -444,10 +351,7 @@ const extractYearWindow = (message) => {
 }
 
 async function buildCouncilMultiYearSummary(message) {
-  if (!isCouncilQuestion(message)) {
-    return null
-  }
-
+  // Extract multi-year window from structured pattern (e.g., "last 3 years")
   const windowYears = extractYearWindow(message)
   if (!windowYears || windowYears < 2) {
     return null

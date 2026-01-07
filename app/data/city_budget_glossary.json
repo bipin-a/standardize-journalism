@@ -1,5 +1,44 @@
 [
   {
+    "id": "capital-budget",
+    "term": "Capital Budget",
+    "definition": "The City's long-term plan for investments in assets like transit, roads, parks, and facilities.",
+    "details": "Who: City of Toronto. What/How: multi-year planned spending on capital projects (infrastructure and assets), separate from operating budget; funded through reserves, debt, and intergovernmental transfers. Why: maintains and grows City infrastructure; approved by Council in the annual budget process.",
+    "sources": [
+      {
+        "type": "City of Toronto Budget",
+        "path": "https://www.toronto.ca/city-government/budget-finances/city-budget/"
+      },
+      {
+        "type": "Toronto Capital Budget Overview",
+        "path": "https://www.toronto.ca/city-government/budget-finances/city-budget/budget-2024/"
+      }
+    ],
+    "matches": [
+      "capital budget"
+    ]
+  },
+  {
+    "id": "ttc",
+    "term": "TTC (Toronto Transit Commission)",
+    "definition": "Toronto's public transit agency operating buses, streetcars, and subways.",
+    "details": "Who: Toronto Transit Commission. What/How: provides transit services across Toronto; funded by fares, City budget, and other sources. Why: essential public service for mobility and access.",
+    "sources": [
+      {
+        "type": "TTC Official Site",
+        "path": "https://www.ttc.ca/"
+      },
+      {
+        "type": "City of Toronto Transit",
+        "path": "https://www.toronto.ca/services-payments/streets-parking-transportation/transit-in-toronto/"
+      }
+    ],
+    "matches": [
+      "ttc",
+      "toronto transit commission"
+    ]
+  },
+  {
     "id": "general-assistance",
     "term": "General Assistance",
     "definition": "Provincial social assistance programs administered by the City (e.g., Ontario Works and related benefits).",

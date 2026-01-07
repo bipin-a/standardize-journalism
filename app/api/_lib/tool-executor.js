@@ -4,17 +4,22 @@ import { getProcurementMetrics } from './metric-data'
 import CITY_BUDGET_GLOSSARY from '../../data/city_budget_glossary.json'
 import { lookupWebSources } from './web-lookup'
 
-const MEETING_PATTERN = /\bmeeting(s)?\b/i
-const REGISTRATION_PATTERN = /\bregistration(s)?\b/i
-const CATEGORY_PATTERN = /\bcategory|categories\b/i
-const PROGRAM_PATTERN = /\bprogram\b/i
-const COUNCILLOR_PATTERN = /\bcouncillor\b/i
-const SUBJECT_PATTERN = /\bsubject\b/i
-const WARD_PATTERN = /\bward\b/i
-const PASS_RATE_PATTERN = /\bpass rate\b/i
-const PASSED_PATTERN = /\bpassed\b/i
-const FAILED_PATTERN = /\bfailed\b/i
-const MOTION_YEAR_PATTERN = /\b(20\d{2})\b/
+const ensureArrayData = (data, label) => {
+  if (!Array.isArray(data)) {
+    throw new Error(`Invalid data format from ${label}: expected array`)
+  }
+  return data
+}
+
+const extractSourceMeta = (data, year = null) => {
+  if (data && typeof data === 'object' && data._source) {
+    return { ...data._source, year }
+  }
+  return null
+}
+
+// Removed pattern-based inference - tool router provides explicit params
+const MOTION_YEAR_PATTERN = /\b(20\d{2})\b/  // Keep for motion ID parsing
 
 export async function executeTool(toolName, params) {
   switch (toolName) {
@@ -159,56 +164,26 @@ async function executeWebLookup(params) {
   }
 }
 
-function inferRecordType(dataset, message = '') {
-  const lower = message.toLowerCase()
-  if (dataset === 'council') {
-    return MEETING_PATTERN.test(lower) ? 'meetings' : 'motions'
-  }
-  if (dataset === 'lobbyist') {
-    return REGISTRATION_PATTERN.test(lower) ? 'registrations' : 'activities'
-  }
-  return 'projects'
-}
+// Removed all pattern-based inference functions
+// Tool router must provide explicit parameters
 
-function inferGroupBy(dataset, message = '', filters = {}) {
-  const lower = message.toLowerCase()
-  if (filters.ward || WARD_PATTERN.test(lower)) return 'ward'
-  if (filters.category || CATEGORY_PATTERN.test(lower)) return 'category'
-  if (PROGRAM_PATTERN.test(lower)) return 'program'
-  if (COUNCILLOR_PATTERN.test(lower)) return 'councillor'
-  if (SUBJECT_PATTERN.test(lower)) return 'subject'
-  if (dataset === 'capital') return 'ward'
-  return 'total'
-}
-
-function inferCompareMetric(dataset, message = '') {
-  const lower = message.toLowerCase()
-  if (dataset === 'council') {
-    if (MEETING_PATTERN.test(lower)) return 'meeting_count'
-    if (/\bpass rate\b/i.test(lower)) return 'pass_rate'
-    return 'count'
-  }
-  if (dataset === 'lobbyist') {
-    return REGISTRATION_PATTERN.test(lower) ? 'registrations' : 'count'
-  }
-  return 'total'
-}
-
-function inferTopKMetric(dataset) {
-  if (dataset === 'capital') return 'spending'
+function getDefaultRecordType(dataset) {
+  // Simple defaults when tool router doesn't specify (non-semantic)
+  if (dataset === 'capital') return 'projects'
   if (dataset === 'council') return 'motions'
-  if (dataset === 'lobbyist') return 'activity'
-  if (dataset === 'money-flow') return 'spending'
-  return 'count'
+  if (dataset === 'lobbyist') return 'activities'
+  return 'records'
 }
 
-function inferCouncilMetric(message = '') {
-  const lower = message.toLowerCase()
-  if (PASS_RATE_PATTERN.test(lower)) return 'pass_rate'
-  if (MEETING_PATTERN.test(lower)) return 'meeting_count'
-  if (PASSED_PATTERN.test(lower)) return 'motions_passed'
-  if (FAILED_PATTERN.test(lower)) return 'motions_failed'
-  return 'total_motions'
+function getDefaultGroupBy(dataset) {
+  // Default to 'total' (aggregated) when no grouping specified
+  return 'total'
+}
+
+function getDefaultMetric(dataset) {
+  // Simple defaults based on dataset type
+  if (dataset === 'capital' || dataset === 'money-flow') return 'spending'
+  return 'count'
 }
 
 function normalizeYears(years) {
@@ -218,13 +193,17 @@ function normalizeYears(years) {
 
 async function executeCount(params) {
   const dataset = params.dataset
-  const recordType = params.recordType || inferRecordType(dataset, params.message)
+  const recordType = params.recordType || getDefaultRecordType(dataset)
+  if (!params.recordType) {
+    console.info(`[tool-executor] count_records: recordType defaulted to "${recordType}" for dataset="${dataset}"`)
+  }
   const trends = await loadTrendsFile(dataset)
   const yearList = resolveYearList({
     years: normalizeYears(params.years),
     windowYears: params.windowYears,
     trends
   })
+  const trendsSource = extractSourceMeta(trends)
 
   if (!trends || !yearList.length) {
     return executeCountFromProcessed({ ...params, recordType, years: yearList })
@@ -254,7 +233,8 @@ async function executeCount(params) {
     result: total,
     source: 'trends',
     dataTimestamp: trends.timestamp,
-    filters: params.filters
+    filters: params.filters,
+    dataSources: trendsSource ? [trendsSource] : undefined
   }
 }
 
@@ -267,9 +247,11 @@ async function executeCountFromProcessed(params) {
   const usedLatest = resolvedYears.length === 0
 
   let total = 0
+  const dataSources = []
   for (const year of yearList) {
-    const data = await loadProcessedFile(dataset, year)
-    if (!Array.isArray(data)) continue
+    const data = ensureArrayData(await loadProcessedFile(dataset, year), `${dataset}:${year ?? 'latest'}`)
+    const sourceMeta = extractSourceMeta(data, year)
+    if (sourceMeta) dataSources.push(sourceMeta)
     let filtered = data
     if (dataset !== 'money-flow') {
       filtered = applyFilters(data, params.filters)
@@ -287,6 +269,19 @@ async function executeCountFromProcessed(params) {
     }
   }
 
+  const hasSpecificQuery = (params.filters && Object.keys(params.filters).length > 0) || resolvedYears.length > 0
+  const failureInfo = total === 0 && hasSpecificQuery
+    ? {
+        failureReason: 'no_records_matched',
+        failureDetail: JSON.stringify({
+          dataset,
+          recordType: params.recordType,
+          years: resolvedYears,
+          filters: params.filters
+        })
+      }
+    : {}
+
   return {
     tool: 'count_records',
     dataset,
@@ -295,14 +290,20 @@ async function executeCountFromProcessed(params) {
     result: total,
     source: 'processed',
     usedLatest,
-    filters: params.filters
+    filters: params.filters,
+    dataSources: dataSources.length ? dataSources : undefined,
+    ...failureInfo
   }
 }
 
 async function executeSum(params) {
   const dataset = params.dataset
-  const groupBy = params.groupBy || inferGroupBy(dataset, params.message, params.filters)
+  const groupBy = params.groupBy || getDefaultGroupBy(dataset)
+  if (!params.groupBy) {
+    console.info(`[tool-executor] sum_amount: groupBy defaulted to "${groupBy}" for dataset="${dataset}"`)
+  }
   const trends = await loadTrendsFile(dataset)
+  const trendsSource = extractSourceMeta(trends)
   const yearList = resolveYearList({
     years: normalizeYears(params.years),
     windowYears: params.windowYears,
@@ -329,7 +330,8 @@ async function executeSum(params) {
         result: total,
         source: 'trends',
         dataTimestamp: trends.timestamp,
-        filters: params.filters
+        filters: params.filters,
+        dataSources: trendsSource ? [trendsSource] : undefined
       }
     }
 
@@ -347,7 +349,8 @@ async function executeSum(params) {
           result: total,
           source: 'trends',
           dataTimestamp: trends.timestamp,
-          filters: params.filters
+          filters: params.filters,
+          dataSources: trendsSource ? [trendsSource] : undefined
         }
       }
     }
@@ -366,7 +369,8 @@ async function executeSum(params) {
           result: total,
           source: 'trends',
           dataTimestamp: trends.timestamp,
-          filters: params.filters
+          filters: params.filters,
+          dataSources: trendsSource ? [trendsSource] : undefined
         }
       }
     }
@@ -374,6 +378,9 @@ async function executeSum(params) {
 
   if (dataset === 'money-flow') {
     const flowType = params.flowType || 'expenditure'
+    if (!params.flowType) {
+      console.info('[tool-executor] sum_amount: flowType defaulted to "expenditure"')
+    }
     const flow = trends.flows?.[flowType]
     if (!flow) {
       return executeSumFromProcessed({ ...params, groupBy, years: yearList })
@@ -390,7 +397,8 @@ async function executeSum(params) {
         result: total,
         source: 'trends',
         dataTimestamp: trends.timestamp,
-        filters: params.filters
+        filters: params.filters,
+        dataSources: trendsSource ? [trendsSource] : undefined
       }
     }
 
@@ -412,7 +420,8 @@ async function executeSum(params) {
           result: total,
           source: 'trends',
           dataTimestamp: trends.timestamp,
-          filters: params.filters
+          filters: params.filters,
+          dataSources: trendsSource ? [trendsSource] : undefined
         }
       }
     }
@@ -430,9 +439,11 @@ async function executeSumFromProcessed(params) {
   const usedLatest = resolvedYears.length === 0
 
   let total = 0
+  const dataSources = []
   for (const year of yearList) {
-    const data = await loadProcessedFile(dataset, year)
-    if (!Array.isArray(data)) continue
+    const data = ensureArrayData(await loadProcessedFile(dataset, year), `${dataset}:${year ?? 'latest'}`)
+    const sourceMeta = extractSourceMeta(data, year)
+    if (sourceMeta) dataSources.push(sourceMeta)
 
     let records = data
     if (dataset === 'money-flow') {
@@ -453,6 +464,20 @@ async function executeSumFromProcessed(params) {
     total += records.reduce((sum, record) => sum + Number(record.amount || 0), 0)
   }
 
+  const hasSpecificQuery = (params.filters && Object.keys(params.filters).length > 0) || resolvedYears.length > 0
+  const failureInfo = total === 0 && hasSpecificQuery
+    ? {
+        failureReason: 'zero_sum_result',
+        failureDetail: JSON.stringify({
+          dataset,
+          groupBy: params.groupBy,
+          years: resolvedYears,
+          filters: params.filters,
+          flowType: params.flowType
+        })
+      }
+    : {}
+
   return {
     tool: 'sum_amount',
     dataset,
@@ -462,13 +487,16 @@ async function executeSumFromProcessed(params) {
     source: 'processed',
     usedLatest,
     filters: params.filters,
-    flowType: params.flowType
+    dataSources: dataSources.length ? dataSources : undefined,
+    flowType: params.flowType,
+    ...failureInfo
   }
 }
 
 async function executeCompare(params) {
   const dataset = params.dataset
   const trends = await loadTrendsFile(dataset)
+  const trendsSource = extractSourceMeta(trends)
   const yearList = resolveYearList({
     years: normalizeYears(params.years),
     windowYears: params.windowYears,
@@ -479,7 +507,10 @@ async function executeCompare(params) {
     throw new Error('compare_years requires at least 2 years')
   }
 
-  const metric = params.metric || inferCompareMetric(dataset, params.message)
+  const metric = params.metric || getDefaultMetric(dataset)
+  if (!params.metric) {
+    console.info(`[tool-executor] compare_years: metric defaulted to "${metric}" for dataset="${dataset}"`)
+  }
   const results = {}
   const missingYears = []
 
@@ -539,17 +570,20 @@ async function executeCompare(params) {
     source: trends ? 'trends' : 'processed',
     dataTimestamp: trends?.timestamp,
     filters: params.filters,
-    flowType: params.flowType
+    flowType: params.flowType,
+    dataSources: trendsSource ? [trendsSource] : undefined
   }
 }
 
 async function executeCompareFromProcessed(params) {
   const dataset = params.dataset
   const results = {}
+  const dataSources = []
 
   for (const year of params.years || []) {
-    const data = await loadProcessedFile(dataset, year)
-    if (!Array.isArray(data)) continue
+    const data = ensureArrayData(await loadProcessedFile(dataset, year), `${dataset}:${year ?? 'latest'}`)
+    const sourceMeta = extractSourceMeta(data, year)
+    if (sourceMeta) dataSources.push(sourceMeta)
 
     let records = data
     if (dataset !== 'money-flow') {
@@ -572,6 +606,21 @@ async function executeCompareFromProcessed(params) {
   const change = Number(last || 0) - Number(first || 0)
   const changePercent = first ? ((change / first) * 100).toFixed(1) : null
 
+  const allZero = Object.values(results).every(v => v === 0)
+  const hasSpecificFilters = params.filters && Object.keys(params.filters).length > 0
+  const hasExplicitYears = Array.isArray(params.years) && params.years.length > 0
+  const failureInfo = allZero && (hasSpecificFilters || hasExplicitYears)
+    ? {
+        failureReason: 'all_years_zero',
+        failureDetail: JSON.stringify({
+          dataset,
+          metric: params.metric,
+          years: sortedYears,
+          filters: params.filters
+        })
+      }
+    : {}
+
   return {
     tool: 'compare_years',
     dataset,
@@ -582,15 +631,24 @@ async function executeCompareFromProcessed(params) {
     changePercent,
     source: 'processed',
     filters: params.filters,
-    flowType: params.flowType
+    dataSources: dataSources.length ? dataSources : undefined,
+    flowType: params.flowType,
+    ...failureInfo
   }
 }
 
 async function executeTopK(params) {
   const dataset = params.dataset
   const trends = await loadTrendsFile(dataset)
-  const groupBy = params.groupBy || (dataset === 'money-flow' ? 'label' : inferGroupBy(dataset, params.message, params.filters))
-  const metric = params.metric || inferTopKMetric(dataset)
+  const trendsSource = extractSourceMeta(trends)
+  const groupBy = params.groupBy || (dataset === 'money-flow' ? 'label' : getDefaultGroupBy(dataset))
+  const metric = params.metric || getDefaultMetric(dataset)
+  if (!params.groupBy) {
+    console.info(`[tool-executor] top_k: groupBy defaulted to "${groupBy}" for dataset="${dataset}"`)
+  }
+  if (!params.metric) {
+    console.info(`[tool-executor] top_k: metric defaulted to "${metric}" for dataset="${dataset}"`)
+  }
   const resolvedYears = resolveYearList({
     years: normalizeYears(params.years || (params.year ? [params.year] : [])),
     windowYears: params.windowYears,
@@ -601,6 +659,9 @@ async function executeTopK(params) {
 
   if (dataset === 'money-flow' && trends && groupBy === 'label') {
     const flowType = params.flowType || 'expenditure'
+    if (!params.flowType) {
+      console.info('[tool-executor] top_k: flowType defaulted to "expenditure"')
+    }
     const flow = trends.flows?.[flowType]
     if (flow && flow.byLabel && year) {
       const results = Object.entries(flow.byLabel)
@@ -622,7 +683,8 @@ async function executeTopK(params) {
         results,
         source: 'trends',
         dataTimestamp: trends.timestamp,
-        filters: params.filters
+        filters: params.filters,
+        dataSources: trendsSource ? [trendsSource] : undefined
       }
     }
   }
@@ -650,7 +712,8 @@ async function executeTopK(params) {
       results,
       source: 'trends',
       dataTimestamp: trends.timestamp,
-      filters: params.filters
+      filters: params.filters,
+      dataSources: trendsSource ? [trendsSource] : undefined
     }
   }
 
@@ -674,7 +737,8 @@ async function executeTopK(params) {
       results,
       source: 'trends',
       dataTimestamp: trends.timestamp,
-      filters: params.filters
+      filters: params.filters,
+      dataSources: trendsSource ? [trendsSource] : undefined
     }
   }
 
@@ -692,21 +756,10 @@ async function executeTopKFromProcessed(params) {
   const year = resolvedYears[resolvedYears.length - 1] || null
   const k = params.k || 5
   const usedLatest = !year
-  const data = await loadProcessedFile(dataset, year)
-  if (!Array.isArray(data)) {
-    return {
-      tool: 'top_k',
-      dataset,
-      groupBy: params.groupBy,
-      metric: params.metric,
-      year,
-      k,
-      results: [],
-      source: 'processed',
-      usedLatest,
-      filters: params.filters
-    }
-  }
+  const data = ensureArrayData(await loadProcessedFile(dataset, year), `${dataset}:${year ?? 'latest'}`)
+  const dataSources = []
+  const sourceMeta = extractSourceMeta(data, year)
+  if (sourceMeta) dataSources.push(sourceMeta)
 
   const aggregator = new Map()
   const addValue = (label, value, extra = {}) => {
@@ -763,6 +816,19 @@ async function executeTopKFromProcessed(params) {
     .sort((a, b) => b.value - a.value)
     .slice(0, k)
 
+  const hasSpecificQuery = (params.filters && Object.keys(params.filters).length > 0) || year
+  const failureInfo = results.length === 0 && hasSpecificQuery
+    ? {
+        failureReason: 'no_results_found',
+        failureDetail: JSON.stringify({
+          dataset,
+          groupBy: params.groupBy,
+          year,
+          filters: params.filters
+        })
+      }
+    : {}
+
   return {
     tool: 'top_k',
     dataset,
@@ -773,7 +839,9 @@ async function executeTopKFromProcessed(params) {
     results,
     source: 'processed',
     usedLatest,
-    filters: params.filters
+    filters: params.filters,
+    dataSources: dataSources.length ? dataSources : undefined,
+    ...failureInfo
   }
 }
 
@@ -801,6 +869,7 @@ async function executeProcurementMetrics(params) {
 
 async function executeBudgetBalance(params) {
   const trends = await loadTrendsFile('money-flow')
+  const trendsSource = extractSourceMeta(trends)
   const yearList = resolveYearList({
     years: normalizeYears(params.years || (params.year ? [params.year] : [])),
     windowYears: params.windowYears,
@@ -816,7 +885,8 @@ async function executeBudgetBalance(params) {
       year,
       result: null,
       source: trends ? 'processed' : 'trends',
-      usedLatest
+      usedLatest,
+      dataSources: trendsSource ? [trendsSource] : undefined
     }
   }
 
@@ -837,12 +907,14 @@ async function executeBudgetBalance(params) {
     },
     source: 'trends',
     dataTimestamp: trends.timestamp,
-    usedLatest
+    usedLatest,
+    dataSources: trendsSource ? [trendsSource] : undefined
   }
 }
 
 async function executeCouncilMetrics(params) {
   const trends = await loadTrendsFile('council')
+  const trendsSource = extractSourceMeta(trends)
   const resolvedYears = resolveYearList({
     years: normalizeYears(params.years || (params.year ? [params.year] : [])),
     windowYears: params.windowYears,
@@ -850,7 +922,11 @@ async function executeCouncilMetrics(params) {
   })
   const year = resolvedYears[resolvedYears.length - 1] || (params.year ? Number(params.year) : null)
   const usedLatest = !params.year && !(params.years && params.years.length) && !params.windowYears
-  const metric = params.metric || inferCouncilMetric(params.message)
+  // Council metrics require explicit metric param - fail with clear error if missing
+  if (!params.metric) {
+    throw new Error('council_metrics requires metric param (pass_rate|meeting_count|total_motions|motions_passed|motions_failed). Tool router should provide this.')
+  }
+  const metric = params.metric
 
   const getMetricValue = (stats) => {
     if (!stats) return null
@@ -870,31 +946,45 @@ async function executeCouncilMetrics(params) {
 
   let source = 'trends'
   let value = null
+  const dataSources = []
   if (trends && year) {
     const stats = trends.byYear?.[String(year)] || null
     value = getMetricValue(stats)
+    if (trendsSource) dataSources.push({ ...trendsSource, year })
   }
 
   if (value === null || Number.isNaN(value)) {
     source = 'processed'
     if (year) {
-      const data = await loadProcessedFile('council', year)
-      if (Array.isArray(data)) {
-        const totalMotions = data.length
-        const motionsPassed = data.filter((item) => item.vote_outcome === 'passed').length
-        const motionsFailed = data.filter((item) => item.vote_outcome === 'failed').length
-        const meetingCount = new Set(data.map((item) => item.meeting_date).filter(Boolean)).size
-        const derived = {
-          total_motions: totalMotions,
-          motions_passed: motionsPassed,
-          motions_failed: motionsFailed,
-          meeting_count: meetingCount,
-          pass_rate: totalMotions ? (motionsPassed / totalMotions) * 100 : 0
-        }
-        value = getMetricValue(derived)
+      const data = ensureArrayData(await loadProcessedFile('council', year), `council:${year}`)
+      const sourceMeta = extractSourceMeta(data, year)
+      if (sourceMeta) dataSources.push(sourceMeta)
+      const totalMotions = data.length
+      const motionsPassed = data.filter((item) => item.vote_outcome === 'passed').length
+      const motionsFailed = data.filter((item) => item.vote_outcome === 'failed').length
+      const meetingCount = new Set(data.map((item) => item.meeting_date).filter(Boolean)).size
+      const derived = {
+        total_motions: totalMotions,
+        motions_passed: motionsPassed,
+        motions_failed: motionsFailed,
+        meeting_count: meetingCount,
+        pass_rate: totalMotions ? (motionsPassed / totalMotions) * 100 : 0
       }
+      value = getMetricValue(derived)
     }
   }
+
+  const isMissing = (value === null || value === undefined || Number.isNaN(value))
+  const failureInfo = isMissing && year
+    ? {
+        failureReason: 'no_data_for_year',
+        failureDetail: JSON.stringify({
+          metric,
+          year,
+          source
+        })
+      }
+    : {}
 
   return {
     tool: 'council_metrics',
@@ -904,7 +994,9 @@ async function executeCouncilMetrics(params) {
     result: value,
     source,
     dataTimestamp: trends?.timestamp,
-    usedLatest
+    usedLatest,
+    dataSources: dataSources.length ? dataSources : undefined,
+    ...failureInfo
   }
 }
 
@@ -929,12 +1021,15 @@ async function executeMotionDetails(params) {
   const yearList = resolvedYears.length ? resolvedYears : [null]
   const usedLatest = resolvedYears.length === 0
 
+  const dataSources = []
+
   const motionId = params.motionId
   const titleContains = params.titleContains
 
   for (const year of yearList) {
-    const data = await loadProcessedFile('council', year)
-    if (!Array.isArray(data)) continue
+    const data = ensureArrayData(await loadProcessedFile('council', year), `council:${year ?? 'latest'}`)
+    const sourceMeta = extractSourceMeta(data, year)
+    if (sourceMeta) dataSources.push(sourceMeta)
 
     const match = data.find((motion) => {
       if (motionId && String(motion.motion_id).toLowerCase() === String(motionId).toLowerCase()) {
@@ -1000,7 +1095,8 @@ async function executeMotionDetails(params) {
         query: {
           motionId,
           titleContains
-        }
+        },
+        dataSources: dataSources.length ? dataSources : undefined
       }
     }
   }
@@ -1022,6 +1118,7 @@ async function executeMotionDetails(params) {
       motionId,
       titleContains,
       yearsTried: yearList
-    })
+    }),
+    dataSources: dataSources.length ? dataSources : undefined
   }
 }

@@ -18,7 +18,7 @@ const TOOL_RESPONSE_TYPES = {
   top_k: 'metric_rank',
   procurement_metrics: 'procurement_metrics',
   get_motion_details: 'motion_detail',
-  glossary_lookup: 'glossary_definition',
+  glossary_lookup: 'glossary',
   web_lookup: 'web_lookup'
 }
 

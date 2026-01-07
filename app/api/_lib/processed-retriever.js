@@ -25,6 +25,13 @@ const readLocalJson = async (relativePath) => {
   return JSON.parse(fileContent)
 }
 
+const validateProcessedData = (data, sourceLabel) => {
+  if (!data || typeof data !== 'object') {
+    throw new Error(`Invalid processed data from ${sourceLabel}: expected JSON object/array`)
+  }
+  return data
+}
+
 const loadProcessedFile = async (relativePath) => {
   const cacheKey = `processed:${relativePath}`
   const cached = processedCache.get(cacheKey)
@@ -34,14 +41,24 @@ const loadProcessedFile = async (relativePath) => {
 
   const url = `${getGcsBaseUrl()}/processed/${relativePath}`
   try {
-    const data = await fetchJson(url)
+    const data = validateProcessedData(await fetchJson(url), url)
+    // Annotate data with source metadata for downstream verification
+    if (data && typeof data === 'object') {
+      data._source = { source: 'remote', fetchedAt: Date.now(), fallback: false }
+    }
     processedCache.set(cacheKey, { data, timestamp: Date.now() })
     return data
   } catch (error) {
     console.warn(`Processed fetch failed, falling back to local: ${error.message}`)
   }
 
-  const data = await readLocalJson(`data/processed/${relativePath}`)
+  const data = validateProcessedData(
+    await readLocalJson(`data/processed/${relativePath}`),
+    `local:${relativePath}`
+  )
+  if (data && typeof data === 'object') {
+    data._source = { source: 'local_fallback', fetchedAt: Date.now(), fallback: true }
+  }
   processedCache.set(cacheKey, { data, timestamp: Date.now() })
   return data
 }
@@ -280,14 +297,13 @@ export const searchLobbyistActivity = async (entities) => {
   }
 }
 
-export const inferQueryType = (message) => {
-  const lower = message.toLowerCase()
-  if (lower.includes('vote') || lower.includes('council') || lower.includes('motion')) {
-    return 'council'
-  }
-  if (lower.includes('lobby')) {
-    return 'lobbyist'
-  }
+// Infer query type from EXTRACTED entities, not from keyword matching
+export const inferQueryType = (entities) => {
+  // If we have council-specific entities, it's a council query
+  if (entities.councillor) return 'council'
+
+  // Fallback to capital (most common query type)
+  // TODO: Add lobbyist entity detection when needed
   return 'capital'
 }
 

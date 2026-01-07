@@ -71,51 +71,8 @@ STRICT RULES:
 5. Do not speculate.
 `
 
-const NO_ANSWER_PHRASES = [
-  "i don't have that information",
-  'i do not have that information',
-  "i don't have matching records",
-  "i couldn't find any relevant data",
-  "i could not find any relevant data",
-  "i couldn't find that detail",
-  "i could not find that detail",
-  "i couldn't access official sources",
-  "i could not access official sources"
-]
-
-const FOLLOW_UP_HINTS = [
-  'tell me more',
-  'more about',
-  'what about',
-  'can you expand',
-  'why is that',
-  'how does that',
-  'can you explain'
-]
-
-const isNoAnswerResponse = (answer = '') => {
-  const text = String(answer || '').toLowerCase()
-  if (!text) return false
-  return NO_ANSWER_PHRASES.some((phrase) => text.includes(phrase))
-}
-
-const isFollowUpMessage = (message = '') => {
-  const text = String(message).toLowerCase()
-  if (!text) return false
-  if (text.length <= 40) return true
-  return FOLLOW_UP_HINTS.some((hint) => text.includes(hint))
-}
-
-const buildWebLookupQuery = (message, history = []) => {
-  if (!history.length || !isFollowUpMessage(message)) {
-    return message
-  }
-  const lastUser = [...history].reverse().find((entry) => entry.role === 'user')
-  if (!lastUser?.content) {
-    return message
-  }
-  return `${message}\n\nPrevious question: ${lastUser.content}`
-}
+// Removed NO_ANSWER_PHRASES, FOLLOW_UP_HINTS, and helper functions
+// LLM handles context naturally via history - no need for keyword heuristics
 
 const buildWebLookupResponse = async ({
   message,
@@ -280,6 +237,7 @@ export async function POST(request) {
           tool: context.toolResult.tool,
           toolDataset: context.toolResult.dataset,
           toolSource: context.toolResult.source,
+          dataSources: context.toolResult.dataSources,
           toolRouting: context.toolRouting || 'llm',
           toolRoutingConfidence: context.toolRoutingConfidence,
           dataTimestamp: context.toolResult.dataTimestamp,
@@ -415,11 +373,14 @@ export async function POST(request) {
       history
     })
 
+    // Web fallback: if we had no data to answer with, try web lookup
+    // Only trigger if truly no answer (not just low confidence partial matches)
     const retrievalHadNoAnswer = Boolean(context?.noAnswer) || Number(context?.resultsCount || 0) === 0
-    if (retrievalHadNoAnswer && isNoAnswerResponse(response.answer)) {
+    const hasLowConfidenceResults = context?.scores?.length > 0 && context.scores[0] >= 0.5
+    if (retrievalHadNoAnswer && !hasLowConfidenceResults) {
       try {
         const toolResult = await executeTool('web_lookup', {
-          query: buildWebLookupQuery(message, history),
+          query: message,  // LLM already has history context, no need to build query
           message,
           history,
           conversationId

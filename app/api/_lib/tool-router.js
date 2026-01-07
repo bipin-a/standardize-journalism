@@ -1,27 +1,37 @@
 import { TOOLS } from './tool-definitions'
 import { getLLMProvider } from './llm-providers'
 
-const CONFIDENCE_THRESHOLD = 0.6
+const CONFIDENCE_THRESHOLD = 0.5
 // Motion ID pattern: matches both "2024.CC25.1" (full) and "CC25.1" (short) formats
 const MOTION_ID_PATTERN = /\b(?:20\d{2}\.)?[A-Z]{1,3}\d+\.\d+\b/i
 
 const TOOL_INDEX = new Map(TOOLS.map((tool) => [tool.name, tool]))
 
 const TOOL_ROUTER_PROMPT = `You are a tool router. Pick the single best tool and parameters to answer the question.
-If none of the tools apply, return {"tool": null, "params": {}, "confidence": 0}.
+
+CRITICAL: You MUST provide ALL required parameters explicitly. Do NOT rely on heuristics to infer missing params.
+
+Required parameters (tool execution will fail if missing):
+- count_records: dataset, recordType (meetings|motions|projects|activities|registrations)
+- sum_amount: dataset (groupBy defaults to 'total' if omitted)
+- compare_years: dataset, years (array with 2+ years)
+- top_k: dataset, groupBy, metric
+- council_metrics: metric (pass_rate|meeting_count|total_motions|motions_passed|motions_failed)
+- get_motion_details: motionId OR titleContains
+- glossary_lookup: term
+- web_lookup: query OR url
 
 Rules:
 - Return JSON only. No markdown or extra text.
 - Use only the tool names provided.
 - Only use allowed enum values.
 - Years must be numbers (e.g., 2024).
-- compare_years requires at least 2 years.
-- get_motion_details should include motionId if present, otherwise titleContains.
 - If the user asks to list/show records or projects (detail listing), do NOT select a tool.
 - If the user asks about a specific councillor's voting record/pattern (what they voted on, supported, opposed), do NOT select a tool - return null to let the RAG system handle it.
 - Only select a tool for computed metrics (count/sum/compare/top/procurement totals), motion details, glossary definitions, or web lookups.
 - Prefer glossary_lookup for definitions of budget terms. Use web_lookup for background/details on a program, strategy, plan, or policy (e.g., "tell me more about..."), or when the user asks for official web information or provides a URL.
 - If the question is descriptive or exploratory and does not need web lookup, return tool=null.
+ - For questions about "how much did the city spend on X" or "how much was spent on X", always select sum_amount with dataset="money-flow", flowType="expenditure", and filters.category set to X.
 
 Tool selection guide:
 - count_records: "how many", "count", "number of" for council meetings/motions or lobbyist activity.
@@ -67,6 +77,10 @@ Q: "How much did the city spend on transit?"
 A: {"tool": "sum_amount", "params": {"dataset": "money-flow", "flowType": "expenditure", "filters": {"category": "transit"}}, "confidence": 0.8}
 Q: "How much was spent on police?"
 A: {"tool": "sum_amount", "params": {"dataset": "money-flow", "flowType": "expenditure", "filters": {"category": "police"}}, "confidence": 0.8}
+Q: "How much was spent on housing?"
+A: {"tool": "sum_amount", "params": {"dataset": "money-flow", "flowType": "expenditure", "filters": {"category": "housing"}}, "confidence": 0.8}
+Q: "How much did the city spend on parks?"
+A: {"tool": "sum_amount", "params": {"dataset": "money-flow", "flowType": "expenditure", "filters": {"category": "parks"}}, "confidence": 0.8}
 Q: "What was the budget surplus or deficit?"
 A: {"tool": "budget_balance", "params": {}, "confidence": 0.8}
 Q: "What's the council pass rate?"

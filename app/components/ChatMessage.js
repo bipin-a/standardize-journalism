@@ -50,6 +50,17 @@ const buildMethodLabel = (metadata) => {
   return null
 }
 
+const checkFallbackData = (metadata) => {
+  if (!metadata?.dataSources) return null
+  const fallbacks = metadata.dataSources.filter(ds => ds?.fallback === true)
+  if (fallbacks.length === 0) return null
+  return {
+    count: fallbacks.length,
+    total: metadata.dataSources.length,
+    labels: fallbacks.map(ds => ds.label || ds.year || 'unknown').filter(Boolean)
+  }
+}
+
 export default function ChatMessage({ message, isUser, sources = [], isLoading = false, metadata = null }) {
   if (isLoading) {
     return (
@@ -66,6 +77,7 @@ export default function ChatMessage({ message, isUser, sources = [], isLoading =
   }
 
   const methodLabel = !isUser ? buildMethodLabel(metadata) : null
+  const fallbackInfo = !isUser ? checkFallbackData(metadata) : null
 
   return (
     <div style={styles.messageWrapper}>
@@ -76,6 +88,14 @@ export default function ChatMessage({ message, isUser, sources = [], isLoading =
         <div style={styles.messageText}>
           {message}
         </div>
+
+        {/* Fallback data warning badge */}
+        {fallbackInfo && (
+          <div style={styles.fallbackBadge} title={`Using cached data: ${fallbackInfo.labels.join(', ')}`}>
+            <span style={styles.fallbackIcon}>⚠️</span>
+            <span>Using cached data{fallbackInfo.count > 1 ? ` (${fallbackInfo.count} sources)` : ''}</span>
+          </div>
+        )}
 
         {methodLabel && (
           <div style={styles.methodBadge}>
@@ -178,6 +198,25 @@ const styles = {
 
   messageText: {
     margin: 0
+  },
+
+  fallbackBadge: {
+    marginTop: '10px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '11px',
+    fontWeight: '500',
+    color: '#92400e',
+    backgroundColor: '#fef3c7',
+    border: '1px solid #fcd34d',
+    borderRadius: '6px',
+    padding: '4px 8px',
+    width: 'fit-content'
+  },
+
+  fallbackIcon: {
+    fontSize: '12px'
   },
 
   sourcesContainer: {

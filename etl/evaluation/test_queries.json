@@ -128,5 +128,29 @@
     "expectedResponseType": "metric_sum",
     "expectedToolDataset": "money-flow",
     "expectedToolRouting": "llm"
+  },
+  {
+    "query": "What is the Vacant Home Tax?",
+    "expectedRetrieval": "tool",
+    "expectedTool": "glossary_lookup",
+    "expectedResponseType": "glossary",
+    "expectedToolDataset": "glossary",
+    "expectedToolRouting": "llm"
+  },
+  {
+    "query": "Define capital budget",
+    "expectedRetrieval": "tool",
+    "expectedTool": "glossary_lookup",
+    "expectedResponseType": "glossary",
+    "expectedToolDataset": "glossary",
+    "expectedToolRouting": "llm"
+  },
+  {
+    "query": "What does TTC stand for?",
+    "expectedRetrieval": "tool",
+    "expectedTool": "glossary_lookup",
+    "expectedResponseType": "glossary",
+    "expectedToolDataset": "glossary",
+    "expectedToolRouting": "llm"
   }
 ]

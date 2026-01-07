@@ -487,6 +487,7 @@ export async function lookupWebSources({ query, url, conversationId }) {
   }
 
   const documents = []
+  const failedUrls = []
   for (const target of urls) {
     try {
       const doc = await fetchWebDocument(target)
@@ -494,7 +495,8 @@ export async function lookupWebSources({ query, url, conversationId }) {
         documents.push(doc)
       }
     } catch (error) {
-      // Skip failed documents
+      console.warn('[web_fetch_failed]', { url: target, error: error.message })
+      failedUrls.push({ url: target, reason: error.message })
     }
     if (documents.length >= MAX_RESULTS) break
   }
@@ -504,7 +506,9 @@ export async function lookupWebSources({ query, url, conversationId }) {
       result: null,
       sources: [],
       failureReason: 'fetch_failed',
-      failureDetail: 'Unable to fetch any web documents.'
+      failureDetail: failedUrls.length
+        ? `Unable to fetch any web documents. Tried ${failedUrls.length} URLs; first error: ${failedUrls[0].reason}`
+        : 'Unable to fetch any web documents.'
     }
   }
 
