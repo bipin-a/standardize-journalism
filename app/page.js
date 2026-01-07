@@ -15,52 +15,52 @@ const SECTIONS = [
     id: 'money-flow',
     href: '/money-flow',
     title: 'Money Flow',
-    description: 'Where the money comes from and where it goes, with summary and flow views.'
+    description: 'Revenue sources and expenditure destinations'
   },
   {
     id: 'contracts',
     href: '/contracts',
     title: 'Contracts',
-    description: 'How much the City awards in contracts and who receives them.'
+    description: 'Contract awards and vendor distribution'
   },
   {
     id: 'spending',
     href: '/spending',
-    title: 'Spending by Type',
-    description: 'What the City buys and which departments spend the most.'
+    title: 'Spending',
+    description: 'Departmental breakdown by category'
   },
   {
     id: 'wards',
     href: '/wards',
-    title: 'By Ward',
-    description: 'Capital investment by neighborhood and ward.'
+    title: 'Wards',
+    description: 'Capital investment by neighborhood'
   },
   {
     id: 'council',
     href: '/council',
-    title: 'Council Decisions',
-    description: 'Voting records, motions, and decision trends.'
+    title: 'Council',
+    description: 'Voting records and motion outcomes'
   },
   {
     id: 'budget',
     href: '/budget',
-    title: 'Budget vs Actual',
-    description: 'Planned vs actual spending with clear data limitations.'
+    title: 'Budget',
+    description: 'Planned versus actual spending'
   },
   {
     id: 'about',
     href: '/about',
-    title: 'About & Sources',
-    description: 'Methodology, glossary, and links to datasets.'
+    title: 'About',
+    description: 'Methodology and data sources'
   }
 ]
 
 const buildPreview = (state, builder) => {
   if (state.loading) {
-    return { tone: 'muted', lines: ['Loading preview...'] }
+    return { tone: 'muted', lines: ['—'] }
   }
   if (state.error || !state.data) {
-    return { tone: 'error', lines: ['Preview unavailable'] }
+    return { tone: 'error', lines: ['—'] }
   }
   const result = builder(state.data) || {}
   return {
@@ -70,30 +70,31 @@ const buildPreview = (state, builder) => {
   }
 }
 
-const getPreviewStyles = (tone) => {
-  if (tone === 'error') {
-    return { color: '#b91c1c' }
-  }
-  if (tone === 'muted') {
-    return { color: '#9ca3af' }
-  }
-  return { color: '#374151' }
-}
-
 const renderPreview = (preview) => {
   if (!preview || preview.lines.length === 0) {
     return null
   }
 
+  const getColor = () => {
+    if (preview.tone === 'error') return '#94a3b8'
+    if (preview.tone === 'muted') return '#94a3b8'
+    return '#475569'
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', ...getPreviewStyles(preview.tone) }}>
+    <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
       {preview.lines.map((line, idx) => (
-        <div key={idx} style={{ fontSize: '12px', lineHeight: '1.4' }}>
+        <div key={idx} style={{ 
+          fontSize: '13px', 
+          color: getColor(),
+          fontVariantNumeric: 'tabular-nums',
+          marginBottom: '4px'
+        }}>
           {line}
         </div>
       ))}
       {preview.meta && (
-        <div style={{ fontSize: '11px', color: '#9ca3af' }}>
+        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px' }}>
           {preview.meta}
         </div>
       )}
@@ -216,54 +217,388 @@ export default function Home() {
   }
 
   return (
-    <div style={{ padding: '32px 20px' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ margin: '0 0 8px 0', fontSize: '28px', color: '#111827', fontWeight: 700 }}>
-          Toronto Money Flow
+    <div style={{ 
+      padding: '48px 24px 96px',
+      maxWidth: '800px',
+      margin: '0 auto'
+    }}>
+      {/* Hero Section */}
+      <header style={{ marginBottom: '56px' }}>
+        <h1 style={{ 
+          margin: '0 0 16px 0', 
+          fontSize: '36px', 
+          color: '#0f172a',
+          fontWeight: 600,
+          letterSpacing: '-0.75px',
+          lineHeight: 1.2
+        }}>
+          Toronto Civic Data Standardized
         </h1>
-        <p style={{ margin: 0, color: '#6b7280', fontSize: '15px' }}>
-          Explore how Toronto raises and spends money, with section-specific views and sources.
+        <p style={{ 
+          margin: 0, 
+          color: '#64748b', 
+          fontSize: '17px',
+          lineHeight: '1.7',
+          maxWidth: '520px'
+        }}>
+          Explore how the city raises and allocates public funds. 
+          Each section includes its own methodology and data sources.
         </p>
-      </div>
+      </header>
 
-      <div
-        style={{
+      {/* Quick Stats Row */}
+      <section style={{ 
+        marginBottom: '56px',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: '16px'
+      }}>
+        {[
+          { label: 'Revenue', value: moneyFlowPreview.lines?.[0]?.split('·')[0]?.replace('In ', '') || '—' },
+          { label: 'Expenditure', value: moneyFlowPreview.lines?.[0]?.split('·')[1]?.replace(' Out ', '') || '—' },
+          { label: 'Contracts', value: contractsPreview.lines?.[0]?.split('·')[0]?.replace('Total ', '') || '—' }
+        ].map((stat, idx) => (
+          <div key={idx} style={{ 
+            background: '#fff',
+            padding: '24px 20px',
+            borderRadius: '16px',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+          }}>
+            <div style={{ 
+              fontSize: '12px', 
+              color: '#64748b',
+              fontWeight: 500,
+              marginBottom: '8px'
+            }}>
+              {stat.label}
+            </div>
+            <div style={{ 
+              fontSize: '24px', 
+              color: '#0066CC',
+              fontWeight: 600,
+              fontVariantNumeric: 'tabular-nums',
+              letterSpacing: '-0.5px'
+            }}>
+              {stat.value}
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {/* Vision Section */}
+      <section style={{ marginBottom: '56px' }}>
+        <h2 style={{ 
+          fontSize: '13px', 
+          color: '#64748b',
+          fontWeight: 600,
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span style={{ 
+            width: '20px', 
+            height: '2px', 
+            background: '#0066CC',
+            borderRadius: '1px'
+          }}></span>
+          Our Vision
+        </h2>
+        
+        {/* Vision cards */}
+        <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '16px',
+          marginBottom: '16px'
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '16px',
+            border: '1px solid #e2e8f0',
+            padding: '20px 24px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+          }}>
+            <div style={{ fontSize: '20px', marginBottom: '10px' }}>✨</div>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '6px' }}>Your News, Your Way</div>
+            <div style={{ fontSize: '14px', color: '#64748b', lineHeight: '1.6' }}>
+              Personalized views by neighborhood, interests, and concerns—so you see what matters to you.
+            </div>
+          </div>
+          <div style={{
+            background: '#fff',
+            borderRadius: '16px',
+            border: '1px solid #e2e8f0',
+            padding: '20px 24px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+          }}>
+            <div style={{ fontSize: '20px', marginBottom: '10px' }}>📬</div>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '6px' }}>Stay Informed</div>
+            <div style={{ fontSize: '14px', color: '#64748b', lineHeight: '1.6' }}>
+              Weekly recaps that summarize what changed and what to watch next.
+            </div>
+          </div>
+        </div>
+
+        {/* Core Questions - unified style */}
+        <div style={{
+          background: '#fff',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          padding: '24px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+        }}>
+          <div style={{ 
+            fontSize: '14px', 
+            fontWeight: 600, 
+            color: '#0f172a',
+            marginBottom: '16px'
+          }}>
+            Three questions we aim to answer
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+              <span style={{ 
+                background: '#f1f5f9', 
+                borderRadius: '6px',
+                width: '28px',
+                height: '28px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 600,
+                fontSize: '13px',
+                color: '#0066CC',
+                flexShrink: 0
+              }}>1</span>
+              <div style={{ fontSize: '14px', color: '#475569', paddingTop: '4px' }}>
+                Where does money come from and where does it go?
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+              <span style={{ 
+                background: '#f1f5f9', 
+                borderRadius: '6px',
+                width: '28px',
+                height: '28px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 600,
+                fontSize: '13px',
+                color: '#0066CC',
+                flexShrink: 0
+              }}>2</span>
+              <div style={{ fontSize: '14px', color: '#475569', paddingTop: '4px' }}>
+                Is Toronto seeing a return on investment?
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+              <span style={{ 
+                background: '#f1f5f9', 
+                borderRadius: '6px',
+                width: '28px',
+                height: '28px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 600,
+                fontSize: '13px',
+                color: '#0066CC',
+                flexShrink: 0
+              }}>3</span>
+              <div style={{ fontSize: '14px', color: '#475569', paddingTop: '4px' }}>
+                Are leaders making good decisions?
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Navigation Cards */}
+      <section style={{ marginBottom: '56px' }}>
+        <h2 style={{ 
+          fontSize: '13px', 
+          color: '#64748b',
+          fontWeight: 600,
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span style={{ 
+            width: '20px', 
+            height: '2px', 
+            background: '#0066CC',
+            borderRadius: '1px'
+          }}></span>
+          Explore Data
+        </h2>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
           gap: '16px'
-        }}
-      >
-        {SECTIONS.map((section) => (
-          <Link
-            key={section.href}
-            href={section.href}
-            style={{
+        }}>
+          {SECTIONS.map((section) => (
+            <Link
+              key={section.href}
+              href={section.href}
+              style={{
+                textDecoration: 'none',
+                padding: '24px',
+                backgroundColor: '#fff',
+                display: 'block',
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#0066CC'
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,102,204,0.12)'
+                e.currentTarget.style.transform = 'translateY(-2px)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#e2e8f0'
+                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'
+                e.currentTarget.style.transform = 'translateY(0)'
+              }}
+            >
+              <div style={{ 
+                fontSize: '16px', 
+                fontWeight: 600,
+                color: '#0f172a',
+                marginBottom: '8px'
+              }}>
+                {section.title}
+              </div>
+              <div style={{ 
+                fontSize: '14px', 
+                color: '#64748b', 
+                lineHeight: '1.6'
+              }}>
+                {section.description}
+              </div>
+              {renderPreview(previewMap[section.id])}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* How to Use */}
+      <section style={{ 
+        marginBottom: '56px',
+        background: '#fff',
+        borderRadius: '20px',
+        border: '1px solid #e2e8f0',
+        padding: '32px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+      }}>
+        <h2 style={{ 
+          fontSize: '13px', 
+          color: '#64748b',
+          fontWeight: 600,
+          marginBottom: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <span style={{ 
+            width: '20px', 
+            height: '2px', 
+            background: '#0066CC',
+            borderRadius: '1px'
+          }}></span>
+          Getting Started
+        </h2>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '24px'
+        }}>
+          {[
+            { 
+              num: '01', 
+              title: 'Browse sections', 
+              desc: 'Each area has its own year selector and detailed views.',
+              icon: '📊'
+            },
+            { 
+              num: '02', 
+              title: 'Ask questions', 
+              desc: 'Use the chat to query specific data by year, ward, or topic.',
+              icon: '💬'
+            },
+            { 
+              num: '03', 
+              title: 'Share feedback', 
+              desc: 'Report issues or suggest improvements via GitHub.',
+              icon: '🔗'
+            }
+          ].map((step, idx) => (
+            <div key={idx}>
+              <div style={{ 
+                fontSize: '24px', 
+                marginBottom: '12px'
+              }}>
+                {step.icon}
+              </div>
+              <div style={{ 
+                fontSize: '15px', 
+                color: '#0f172a',
+                fontWeight: 600,
+                marginBottom: '8px'
+              }}>
+                {step.title}
+              </div>
+              <div style={{ 
+                fontSize: '14px', 
+                color: '#64748b',
+                lineHeight: '1.6'
+              }}>
+                {step.desc}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Footer Note */}
+      <footer style={{ 
+        paddingTop: '32px',
+        borderTop: '1px solid #e2e8f0'
+      }}>
+        <p style={{ 
+          fontSize: '14px', 
+          color: '#64748b', 
+          lineHeight: '1.7',
+          margin: 0
+        }}>
+          This dashboard is exploratory and intended to encourage civic engagement. 
+          It is not audited reporting. Data sourced from the City of Toronto Open Data Portal.
+        </p>
+        <p style={{ 
+          fontSize: '14px', 
+          color: '#64748b', 
+          lineHeight: '1.7',
+          margin: '16px 0 0 0'
+        }}>
+          <Link 
+            href="https://github.com/bipin-a/standardize-journalism/issues" 
+            style={{ 
+              color: '#0066CC', 
               textDecoration: 'none',
-              border: '1px solid #e5e7eb',
-              borderRadius: '12px',
-              padding: '16px',
-              backgroundColor: '#ffffff',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-              color: '#111827'
+              fontWeight: 500,
+              borderBottom: '1px solid #99c2e8',
+              paddingBottom: '1px'
             }}
           >
-            <div style={{ fontSize: '14px', fontWeight: 700 }}>{section.title}</div>
-            <div style={{ fontSize: '12px', color: '#6b7280', lineHeight: '1.5' }}>
-              {section.description}
-            </div>
-            {renderPreview(previewMap[section.id])}
-            <div style={{ fontSize: '12px', color: '#2563eb', fontWeight: 600 }}>
-              View section →
-            </div>
+            Open an issue
           </Link>
-        ))}
-      </div>
-
-      <div style={{ marginTop: '24px', fontSize: '12px', color: '#6b7280' }}>
-        Each section has its own year selector and methodology notes.
-      </div>
+          {' '}or contribute on GitHub.
+        </p>
+      </footer>
     </div>
   )
 }

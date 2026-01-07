@@ -12,22 +12,22 @@ export const CATEGORY_RULES = [
   {
     name: 'Police',
     plannedKeywords: ['police'],
-    actualKeywords: ['police']
+    actualKeywords: ['police', 'court security', 'prisoner transportation']
   },
   {
     name: 'Fire',
     plannedKeywords: ['fire'],
-    actualKeywords: ['fire']
+    actualKeywords: ['fire', 'emergency measures']
   },
   {
     name: 'Paramedic',
     plannedKeywords: ['paramedic'],
-    actualKeywords: ['paramedic']
+    actualKeywords: ['ambulance']
   },
   {
     name: 'Public Health',
     plannedKeywords: ['public health'],
-    actualKeywords: ['public health', 'health']
+    actualKeywords: ['public health', 'health services']
   },
   {
     name: 'Parks & Recreation',
@@ -37,7 +37,7 @@ export const CATEGORY_RULES = [
   {
     name: 'Housing & Shelter',
     plannedKeywords: ['housing', 'shelter'],
-    actualKeywords: ['housing', 'shelter']
+    actualKeywords: ['housing', 'shelter', 'assistance to seniors', 'general assistance']
   },
   {
     name: 'Solid Waste',
@@ -47,12 +47,12 @@ export const CATEGORY_RULES = [
   {
     name: 'Water',
     plannedKeywords: ['water'],
-    actualKeywords: ['water']
+    actualKeywords: ['water', 'wastewater', 'storm sewer']
   },
   {
     name: 'Libraries',
     plannedKeywords: ['library'],
-    actualKeywords: ['library']
+    actualKeywords: ['libraries']
   },
   {
     name: 'Corporate & Governance',

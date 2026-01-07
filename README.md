@@ -31,6 +31,26 @@ The AI assistants helped with code generation, refactoring, documentation, and d
 
 ---
 
+## Vision
+
+- Personalized views by neighborhood, interests, and concerns so every resident sees what matters locally
+- Weekly recap posts or email digests that summarize what changed and what to watch next
+- Built to answer three core questions:
+    1) Where does money come from and where does it go?
+    2) Is Toronto seeing a return on investment? (Budget vs Actual will inform this; still evolving.)
+    3) Are leaders making "good" decisions? Early signals come from the Council Decisions data.
+- Exploratory by design: this is meant to spark questions and curiosity, not serve as audited reporting
+
+---
+
+## How to Interact
+
+1. Start with the dashboard sections (cards on the home page) and adjust the year selectors to focus your view.
+2. Use the chat bubble to ask specific questions. Include context (year, ward, topic) for clearer answers.
+3. Want a new view or notice a data issue? Open a GitHub issue with steps, links, and the section name.
+
+---
+
 ## Data Sources
 
 All data comes from [Toronto Open Data](https://open.toronto.ca/):
@@ -162,6 +182,14 @@ Contributions welcome! Please:
 3. Make your changes
 4. Run `npm run test` (smoke tests)
 5. Submit a PR
+
+### Issues, Pull Requests, and Expectations
+
+- Issues and PRs are enabled. Please use the templates (auto-selected when you open a new issue or PR).
+- For issues, include: what you expected, what you saw, steps to reproduce, URL/section, and screenshots if possible.
+- For data questions, share the source link or CSV slice you are referencing.
+- Reviews happen on a best-effort basis; accuracy, safety, and data quality are prioritized first.
+- This project is exploratory and not audited reporting. Use the data to frame questions and investigations.
 
 
 ---

@@ -1,0 +1,59 @@
+name: Bug report
+description: Report a bug or data issue
+labels: [bug]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Short description of the issue.
+      placeholder: The chart crashes when selecting 2022...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      placeholder: The chart should show a stacked bar with no errors.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the exact clicks/inputs.
+      placeholder: |
+        1. Go to /budget
+        2. Select 2022
+        3. Click Download CSV
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: Data or links
+      description: Include URLs, dataset names, or CSV slices that show the issue.
+    validations:
+      required: false
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag and drop images.
+    validations:
+      required: false
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, OS, and whether this was on local dev or the deployed site.
+      placeholder: Safari 17, macOS, deployed site
+    validations:
+      required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else?
+      description: Logs, console errors, or other context.
+    validations:
+      required: false

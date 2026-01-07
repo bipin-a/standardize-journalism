@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Read the vision and interaction guide
+    url: https://github.com/bipin-a/standardize-journalism#vision
+    about: Start here for context before opening an issue.
