@@ -4,8 +4,8 @@ const NON_COMPETITIVE_RESOURCE_ID = 'a11b18b4-72e6-47e3-a4e9-05dcc8abd697'
 const PAGE_LIMIT = 1000
 
 const AWARDED_FIELDS = {
-  amount: 'Awarded Amount',
-  date: 'Award Date',
+  amount: 'Award',
+  date: 'Award Authority Obtained Date',
   vendor: 'Successful Supplier',
   division: 'Division',
   category: 'High Level Category'
