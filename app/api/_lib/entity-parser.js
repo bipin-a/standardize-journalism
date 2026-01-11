@@ -18,6 +18,9 @@ const extractCouncillor = (message) => {
   return match ? match[1].trim() : null
 }
 
+const extractLobbyistIntent = (message) =>
+  /\blobbyist(s)?\b|\blobbying\b|\blobbyist registry\b|\blobby registry\b/i.test(message)
+
 // Simple helper to detect council-related queries
 // Used to decide whether to apply councillor canonicalization downstream
 const isCouncilQuery = (message) => {
@@ -31,11 +34,13 @@ export const parseEntities = (message) => {
   const ward = extractWard(message)
   const year = extractYear(message)
   const councillor = extractCouncillor(message)
+  const lobbyist = extractLobbyistIntent(message)
 
   return {
     ward,
     year,
     councillor,
+    lobbyist,
     // Semantic fields - will be populated by LLM extraction if needed
     category: null,
     program: null,
@@ -48,5 +53,6 @@ export const hasDetailEntities = (entities) =>
     entities.ward ||
     entities.category ||
     entities.program ||
-    entities.councillor
+    entities.councillor ||
+    entities.lobbyist
   )

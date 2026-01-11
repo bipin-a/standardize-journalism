@@ -22,6 +22,9 @@ export const getCouncilIndexUrl = () =>
 export const getCouncilTrendsUrl = () =>
   process.env.COUNCIL_TRENDS_URL || `${getGcsBaseUrl()}/gold/council-decisions/trends.json`
 
+export const getLobbyistTrendsUrl = () =>
+  process.env.LOBBYIST_TRENDS_URL || `${getGcsBaseUrl()}/gold/lobbyist-registry/trends.json`
+
 export const getRagIndexUrl = () =>
   process.env.RAG_INDEX_URL || `${getGcsBaseUrl()}/gold/rag/index.json`
 

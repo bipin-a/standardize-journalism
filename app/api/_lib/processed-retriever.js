@@ -3,7 +3,8 @@ import { join } from 'path'
 import {
   getCapitalIndexUrl,
   getCouncilIndexUrl,
-  getGcsBaseUrl
+  getGcsBaseUrl,
+  getLobbyistTrendsUrl
 } from './gcs-urls'
 import { normalizeCategoryFilter } from './data-loader'
 
@@ -146,6 +147,11 @@ const getAvailableCapitalYears = async () => {
 const getAvailableCouncilYears = async () => {
   const index = await loadIndex('council', getCouncilIndexUrl(), 'data/gold/council-decisions/index.json')
   return normalizeAvailableYears(index?.availableYears || index?.years || [])
+}
+
+const getAvailableLobbyistYears = async () => {
+  const trends = await loadIndex('lobbyist-trends', getLobbyistTrendsUrl(), 'data/gold/lobbyist-registry/trends.json')
+  return normalizeAvailableYears(trends?.availableYears || trends?.years || [])
 }
 
 const getLatestCapitalYear = async () => {
@@ -301,9 +307,9 @@ export const searchLobbyistActivity = async (entities) => {
 export const inferQueryType = (entities) => {
   // If we have council-specific entities, it's a council query
   if (entities.councillor) return 'council'
+  if (entities.lobbyist) return 'lobbyist'
 
   // Fallback to capital (most common query type)
-  // TODO: Add lobbyist entity detection when needed
   return 'capital'
 }
 
@@ -313,6 +319,9 @@ const getAvailableYearsForQueryType = async (queryType) => {
   }
   if (queryType === 'council') {
     return getAvailableCouncilYears()
+  }
+  if (queryType === 'lobbyist') {
+    return getAvailableLobbyistYears()
   }
   return []
 }
